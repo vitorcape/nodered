@@ -1,0 +1,1725 @@
+[
+    {
+        "id": "b82cd2a8bd2c1565",
+        "type": "tab",
+        "label": "ClimaMonitor v2",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "14981234f4880b07",
+        "type": "junction",
+        "z": "b82cd2a8bd2c1565",
+        "x": 880,
+        "y": 160,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7e1f7c304de5deae",
+        "type": "mqtt in",
+        "z": "b82cd2a8bd2c1565",
+        "name": "MQTT DHT22",
+        "topic": "sensores/dht22/dados",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "broker_mosquitto",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 110,
+        "y": 100,
+        "wires": [
+            [
+                "0f421a0aed179f33"
+            ]
+        ]
+    },
+    {
+        "id": "fb2d15aff5252405",
+        "type": "mqtt in",
+        "z": "b82cd2a8bd2c1565",
+        "name": "MQTT DHT11",
+        "topic": "sensores/dht11/dados",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "broker_mosquitto",
+        "inputs": 0,
+        "x": 110,
+        "y": 180,
+        "wires": [
+            [
+                "7ffa8eba128f03ef"
+            ]
+        ]
+    },
+    {
+        "id": "0f421a0aed179f33",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Validar DHT22",
+        "func": "const { fonte, temperatura, umidade } = msg.payload;\nif (temperatura < -40 || temperatura > 80 || umidade < 0 || umidade > 100) {\n    node.warn('Fora de faixa: ' + JSON.stringify(msg.payload));\n    return null;\n}\nconst temp = parseFloat(temperatura.toFixed(2));\nconst umi  = parseFloat(umidade.toFixed(2));\nconst hi   = calcHI(temp, umi);\nconst nivel = calcNivel(hi);\nmsg.topic   = 'INSERT INTO leituras (fonte, temperatura, umidade, heat_index, nivel_alerta, criado_em) VALUES (?, ?, ?, ?, ?, NOW())';\nmsg.payload = [fonte, temp, umi, hi, nivel];\nmsg._dados  = { fonte, temperatura: temp, umidade: umi, heat_index: hi, nivel };\nreturn msg;\nfunction calcHI(t,u){return parseFloat((-8.78469475556+1.61139411*t+2.33854883889*u-0.14611605*t*u-0.012308094*t*t-0.0164248277778*u*u+0.002211732*t*t*u+0.00072546*t*u*u-0.000003582*t*t*u*u).toFixed(2));}\nfunction calcNivel(hi){if(hi>=54)return 'perigo_extremo';if(hi>=41)return 'perigo';if(hi>=32)return 'extrema_cautela';if(hi>=27)return 'cautela';return 'conforto';}",
+        "outputs": 1,
+        "x": 330,
+        "y": 100,
+        "wires": [
+            [
+                "f70ccf1ea14c9258"
+            ]
+        ]
+    },
+    {
+        "id": "7ffa8eba128f03ef",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Validar DHT11",
+        "func": "const { fonte, temperatura, umidade } = msg.payload;\nif (temperatura < -40 || temperatura > 80 || umidade < 0 || umidade > 100) {\n    node.warn('Fora de faixa: ' + JSON.stringify(msg.payload));\n    return null;\n}\nconst temp = parseFloat(temperatura.toFixed(2));\nconst umi  = parseFloat(umidade.toFixed(2));\nconst hi   = calcHI(temp, umi);\nconst nivel = calcNivel(hi);\nmsg.topic   = 'INSERT INTO leituras (fonte, temperatura, umidade, heat_index, nivel_alerta, criado_em) VALUES (?, ?, ?, ?, ?, NOW())';\nmsg.payload = [fonte, temp, umi, hi, nivel];\nmsg._dados  = { fonte, temperatura: temp, umidade: umi, heat_index: hi, nivel };\nreturn msg;\nfunction calcHI(t,u){return parseFloat((-8.78469475556+1.61139411*t+2.33854883889*u-0.14611605*t*u-0.012308094*t*t-0.0164248277778*u*u+0.002211732*t*t*u+0.00072546*t*u*u-0.000003582*t*t*u*u).toFixed(2));}\nfunction calcNivel(hi){if(hi>=54)return 'perigo_extremo';if(hi>=41)return 'perigo';if(hi>=32)return 'extrema_cautela';if(hi>=27)return 'cautela';return 'conforto';}",
+        "outputs": 1,
+        "x": 330,
+        "y": 180,
+        "wires": [
+            [
+                "f70ccf1ea14c9258"
+            ]
+        ]
+    },
+    {
+        "id": "f70ccf1ea14c9258",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "INSERT leitura sensor",
+        "x": 560,
+        "y": 140,
+        "wires": [
+            [
+                "48cb0c9b6e9a5a53",
+                "69892df7a3d7b156",
+                "e8d8e58c71e7a45e"
+            ]
+        ]
+    },
+    {
+        "id": "69892df7a3d7b156",
+        "type": "debug",
+        "z": "b82cd2a8bd2c1565",
+        "d": true,
+        "name": "MySQL result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "48cb0c9b6e9a5a53",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Rotear sensor → card",
+        "func": "const d = msg._dados;\nif (!d) return [null, null, null];\n\nconst nivelLabel = {\n    conforto:         'Conforto',\n    cautela:          'Cautela',\n    extrema_cautela:  'Cautela Extrema',\n    perigo:           'Perigo',\n    perigo_extremo:   'Perigo Extremo'\n};\n\nconst nivelCor = {\n    conforto:        '#3B6D11',\n    cautela:         '#854F0B',\n    extrema_cautela: '#854F0B',\n    perigo:          '#A32D2D',\n    perigo_extremo:  '#501313'\n};\n\nconst nivelBg = {\n    conforto:        '#EAF3DE',\n    cautela:         '#FAEEDA',\n    extrema_cautela: '#FAEEDA',\n    perigo:          '#FCEBEB',\n    perigo_extremo:  '#FCEBEB'\n};\n\nconst nivelDot = {\n    conforto:        '#639922',\n    cautela:         '#BA7517',\n    extrema_cautela: '#BA7517',\n    perigo:          '#E24B4A',\n    perigo_extremo:  '#A32D2D'\n};\n\nconst payload = {\n    temperatura: d.temperatura,\n    umidade: d.umidade,\n    heat_index: d.heat_index,\n    nivel_label: nivelLabel[d.nivel] || d.nivel,\n    nivel_cor: nivelCor[d.nivel] || '#333',\n    nivel_bg: nivelBg[d.nivel] || '#eee',\n    nivel_dot: nivelDot[d.nivel] || '#999',\n    ts: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })\n};\n\nconst msgChart = { payload: d.temperatura, topic: d.fonte };\n\nlet msgAlerta = null;\nif (d.nivel !== 'conforto') {\n    msgAlerta = { topic: 'alertas/conforto', payload: JSON.stringify({ nivel: d.nivel, fonte: d.fonte, heat_index: d.heat_index }), qos: 1 };\n}\n\nif (d.fonte === 'dht22') {\n    return [{ payload }, null, msgChart, msgAlerta];\n} else {\n    return [null, { payload }, msgChart, msgAlerta];\n}",
+        "outputs": 4,
+        "x": 800,
+        "y": 160,
+        "wires": [
+            [
+                "150709f301a40236"
+            ],
+            [
+                "fbe848ac65312e05"
+            ],
+            [
+                "4efb95ef57cb3010"
+            ],
+            [
+                "61b0a434f93fc66c"
+            ]
+        ]
+    },
+    {
+        "id": "150709f301a40236",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_atual",
+        "page": "",
+        "ui": "",
+        "name": "Card DHT22",
+        "order": 1,
+        "width": 4,
+        "height": "5",
+        "format": "<template>\n  <div class=\"clima-card dht22\">\n    <div class=\"card-header\">\n      <span class=\"card-title teal\">DHT22</span>\n      <span class=\"badge\">Interno · ESP32 #1</span>\n    </div>\n    <div class=\"metrics\">\n      <div class=\"metric\">\n        <div class=\"metric-label\">TEMPERATURA</div>\n        <div class=\"metric-value\">{{ msg?.payload?.temperatura ?? '—' }}<span class=\"unit\">°C</span></div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-label\">UMIDADE</div>\n        <div class=\"metric-value\">{{ msg?.payload?.umidade ?? '—' }}<span class=\"unit\">%</span></div>\n        <div class=\"metric-sub\">±2% UR</div>\n      </div>\n    </div>\n    <div class=\"status-bar\" :style=\"{ background: msg?.payload?.nivel_bg, color: msg?.payload?.nivel_cor }\">\n      <span class=\"dot\" :style=\"{ background: msg?.payload?.nivel_dot }\"></span>\n      {{ msg?.payload?.nivel_label ?? 'Aguardando...' }}\n    </div>\n    <div class=\"card-footer\">\n      <div>\n        <div class=\"hi-label\">HEAT INDEX</div>\n        <div class=\"hi-value\">{{ msg?.payload?.heat_index ?? '—' }} °C</div>\n      </div>\n      <span class=\"ts\">{{ msg?.payload?.ts ?? '—' }}</span>\n    </div>\n  </div>\n</template>\n<style>\n  .clima-card { font-family: sans-serif; background: #fff; border-radius: 12px; border: 0.5px solid #e0e0e0; padding: 1rem 1.25rem; border-top: 2.5px solid #1D9E75; }\n  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }\n  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.07em; }\n  .teal { color: #0F6E56; }\n  .blue { color: #185FA5; }\n  .amber { color: #854F0B; }\n  .badge { font-size: 11px; color: #888; border: 0.5px solid #ddd; border-radius: 20px; padding: 2px 10px; }\n  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }\n  .metric-label { font-size: 10px; letter-spacing: 0.09em; color: #888; margin-bottom: 3px; }\n  .metric-value { font-size: 28px; font-weight: 500; color: #111; line-height: 1; }\n  .unit { font-size: 13px; font-weight: 400; color: #888; margin-left: 1px; }\n  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }\n  .status-bar { border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; margin-bottom: 0.85rem; }\n  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }\n  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 0.75rem; border-top: 0.5px solid #eee; }\n  .hi-label { font-size: 10px; letter-spacing: 0.09em; color: #888; }\n  .hi-value { font-size: 13px; font-weight: 500; color: #111; margin-top: 2px; }\n  .ts { font-size: 11px; color: #aaa; }\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1060,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fbe848ac65312e05",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_atual",
+        "page": "",
+        "ui": "",
+        "name": "Card DHT11",
+        "order": 2,
+        "width": 4,
+        "height": "5",
+        "format": "<template>\n  <div class=\"clima-card dht11\">\n    <div class=\"card-header\">\n      <span class=\"card-title blue\">DHT11</span>\n      <span class=\"badge\">Externo · ESP32 #2</span>\n    </div>\n    <div class=\"metrics\">\n      <div class=\"metric\">\n        <div class=\"metric-label\">TEMPERATURA</div>\n        <div class=\"metric-value\">{{ msg?.payload?.temperatura ?? '—' }}<span class=\"unit\">°C</span></div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-label\">UMIDADE</div>\n        <div class=\"metric-value\">{{ msg?.payload?.umidade ?? '—' }}<span class=\"unit\">%</span></div>\n        <div class=\"metric-sub\">±5% UR</div>\n      </div>\n    </div>\n    <div class=\"status-bar\" :style=\"{ background: msg?.payload?.nivel_bg, color: msg?.payload?.nivel_cor }\">\n      <span class=\"dot\" :style=\"{ background: msg?.payload?.nivel_dot }\"></span>\n      {{ msg?.payload?.nivel_label ?? 'Aguardando...' }}\n    </div>\n    <div class=\"card-footer\">\n      <div>\n        <div class=\"hi-label\">HEAT INDEX</div>\n        <div class=\"hi-value\">{{ msg?.payload?.heat_index ?? '—' }} °C</div>\n      </div>\n      <span class=\"ts\">{{ msg?.payload?.ts ?? '—' }}</span>\n    </div>\n  </div>\n</template>\n<style>\n  .clima-card { font-family: sans-serif; background: #fff; border-radius: 12px; border: 0.5px solid #e0e0e0; padding: 1rem 1.25rem; border-top: 2.5px solid #378ADD; }\n  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }\n  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.07em; }\n  .teal { color: #0F6E56; }\n  .blue { color: #185FA5; }\n  .amber { color: #854F0B; }\n  .badge { font-size: 11px; color: #888; border: 0.5px solid #ddd; border-radius: 20px; padding: 2px 10px; }\n  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }\n  .metric-label { font-size: 10px; letter-spacing: 0.09em; color: #888; margin-bottom: 3px; }\n  .metric-value { font-size: 28px; font-weight: 500; color: #111; line-height: 1; }\n  .unit { font-size: 13px; font-weight: 400; color: #888; margin-left: 1px; }\n  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }\n  .status-bar { border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; margin-bottom: 0.85rem; }\n  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }\n  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 0.75rem; border-top: 0.5px solid #eee; }\n  .hi-label { font-size: 10px; letter-spacing: 0.09em; color: #888; }\n  .hi-value { font-size: 13px; font-weight: 500; color: #111; margin-top: 2px; }\n  .ts { font-size: 11px; color: #aaa; }\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1060,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "87bcd14e36b81940",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_atual",
+        "page": "",
+        "ui": "",
+        "name": "Card Open-Meteo",
+        "order": 3,
+        "width": 4,
+        "height": "5",
+        "format": "<template>\n  <div class=\"clima-card meteo\">\n    <div class=\"card-header\">\n      <span class=\"card-title amber\">Open-Meteo</span>\n      <span class=\"badge\">Externo · API</span>\n    </div>\n    <div class=\"metrics\">\n      <div class=\"metric\">\n        <div class=\"metric-label\">TEMPERATURA</div>\n        <div class=\"metric-value\">{{ msg?.payload?.temperatura ?? '—' }}<span class=\"unit\">°C</span></div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-label\">UMIDADE</div>\n        <div class=\"metric-value\">{{ msg?.payload?.umidade ?? '—' }}<span class=\"unit\">%</span></div>\n        <div class=\"metric-sub\">Catanduva · SP</div>\n      </div>\n    </div>\n    <div class=\"status-bar\" :style=\"{ background: msg?.payload?.nivel_bg, color: msg?.payload?.nivel_cor }\">\n      <span class=\"dot\" :style=\"{ background: msg?.payload?.nivel_dot }\"></span>\n      {{ msg?.payload?.nivel_label ?? 'Aguardando...' }}\n    </div>\n    <div class=\"card-footer\">\n      <div>\n        <div class=\"hi-label\">HEAT INDEX</div>\n        <div class=\"hi-value\">{{ msg?.payload?.heat_index ?? '—' }} °C</div>\n      </div>\n      <span class=\"ts\">{{ msg?.payload?.ts ?? '—' }}</span>\n    </div>\n  </div>\n</template>\n<style>\n  .clima-card { font-family: sans-serif; background: #fff; border-radius: 12px; border: 0.5px solid #e0e0e0; padding: 1rem 1.25rem; border-top: 2.5px solid #BA7517; }\n  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }\n  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.07em; }\n  .teal { color: #0F6E56; }\n  .blue { color: #185FA5; }\n  .amber { color: #854F0B; }\n  .badge { font-size: 11px; color: #888; border: 0.5px solid #ddd; border-radius: 20px; padding: 2px 10px; }\n  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1rem; }\n  .metric-label { font-size: 10px; letter-spacing: 0.09em; color: #888; margin-bottom: 3px; }\n  .metric-value { font-size: 28px; font-weight: 500; color: #111; line-height: 1; }\n  .unit { font-size: 13px; font-weight: 400; color: #888; margin-left: 1px; }\n  .metric-sub { font-size: 11px; color: #aaa; margin-top: 3px; }\n  .status-bar { border-radius: 6px; padding: 6px 10px; display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; margin-bottom: 0.85rem; }\n  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }\n  .card-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 0.75rem; border-top: 0.5px solid #eee; }\n  .hi-label { font-size: 10px; letter-spacing: 0.09em; color: #888; }\n  .hi-value { font-size: 13px; font-weight: 500; color: #111; margin-top: 2px; }\n  .ts { font-size: 11px; color: #aaa; }\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1410,
+        "y": 640,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4efb95ef57cb3010",
+        "type": "ui-chart",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_historico",
+        "name": "Temperatura em tempo real",
+        "label": "Temperatura (°C)",
+        "order": 1,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "",
+        "yAxisPropertyType": "property",
+        "ymin": "",
+        "ymax": "",
+        "bins": "",
+        "stackSeries": false,
+        "pointRadius": "",
+        "showLegend": true,
+        "removeOlder": "30",
+        "removeOlderUnit": "60",
+        "removeOlderPoints": "1000",
+        "colors": [
+            "#1D9E75",
+            "#378ADD",
+            "#BA7517",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+            "#e377c2",
+            "#7f7f7f",
+            "#bcbd22"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 12,
+        "height": 6,
+        "className": "",
+        "interpolation": "linear",
+        "x": 1600,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2bac23dddc341780",
+        "type": "inject",
+        "z": "b82cd2a8bd2c1565",
+        "name": "A cada 5 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 760,
+        "wires": [
+            [
+                "34c98102e368497a"
+            ]
+        ]
+    },
+    {
+        "id": "34c98102e368497a",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Query últimas 24h",
+        "func": "msg.topic = 'SELECT fonte, temperatura, umidade, heat_index, nivel_alerta, criado_em FROM leituras WHERE criado_em >= NOW() - INTERVAL 24 HOUR ORDER BY criado_em ASC';\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "x": 320,
+        "y": 760,
+        "wires": [
+            [
+                "cee48ba03261f751"
+            ]
+        ]
+    },
+    {
+        "id": "cee48ba03261f751",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT histórico 24h",
+        "x": 540,
+        "y": 760,
+        "wires": [
+            [
+                "7b3cc9a17cb9f4a9"
+            ]
+        ]
+    },
+    {
+        "id": "7b3cc9a17cb9f4a9",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Formatar para ui-chart",
+        "func": "const rows = msg.payload;\nif (!rows || rows.length === 0) return null;\nnode.send({ payload: [], action: 'replace' });\nconst msgs = rows.map(r => ({\n    payload: r.temperatura,\n    topic:   r.fonte,\n    timestamp: new Date(r.criado_em).getTime()\n}));\nreturn [msgs];",
+        "outputs": 1,
+        "x": 760,
+        "y": 760,
+        "wires": [
+            [
+                "ceefb21877f2a0cd"
+            ]
+        ]
+    },
+    {
+        "id": "ceefb21877f2a0cd",
+        "type": "ui-chart",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_historico",
+        "name": "Histórico 24h",
+        "label": "Temperatura últimas 24h (°C)",
+        "order": 2,
+        "chartType": "line",
+        "category": "topic",
+        "categoryType": "msg",
+        "xAxisLabel": "",
+        "xAxisProperty": "",
+        "xAxisPropertyType": "timestamp",
+        "xAxisType": "time",
+        "xAxisFormat": "",
+        "xAxisFormatType": "auto",
+        "xmin": "",
+        "xmax": "",
+        "yAxisLabel": "",
+        "yAxisProperty": "",
+        "yAxisPropertyType": "property",
+        "ymin": "10",
+        "ymax": "40",
+        "bins": "",
+        "stackSeries": false,
+        "pointRadius": "",
+        "showLegend": true,
+        "removeOlder": "24",
+        "removeOlderUnit": "3600",
+        "removeOlderPoints": "",
+        "colors": [
+            "#1d9e75",
+            "#378add",
+            "#ba7517",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+            "#e377c2",
+            "#7f7f7f",
+            "#bcbd22"
+        ],
+        "textColor": [
+            "#666666"
+        ],
+        "textColorDefault": true,
+        "gridColor": [
+            "#e5e5e5"
+        ],
+        "gridColorDefault": true,
+        "width": 12,
+        "height": 6,
+        "className": "",
+        "interpolation": "linear",
+        "x": 990,
+        "y": 760,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7ab376e1c6f1b860",
+        "type": "inject",
+        "z": "b82cd2a8bd2c1565",
+        "name": "A cada 10 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "600",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "3",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 640,
+        "wires": [
+            [
+                "8bad20b2ec0ae83d"
+            ]
+        ]
+    },
+    {
+        "id": "8bad20b2ec0ae83d",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar URL Open-Meteo",
+        "func": "msg.url = 'https://api.open-meteo.com/v1/forecast?latitude=-21.1378&longitude=-48.9728&current=temperature_2m,relative_humidity_2m,precipitation,windspeed_10m,weathercode&timezone=America%2FSao_Paulo&forecast_days=1';\nreturn msg;",
+        "outputs": 1,
+        "x": 320,
+        "y": 640,
+        "wires": [
+            [
+                "74baf24a1111bf93"
+            ]
+        ]
+    },
+    {
+        "id": "74baf24a1111bf93",
+        "type": "http request",
+        "z": "b82cd2a8bd2c1565",
+        "name": "GET Open-Meteo",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 520,
+        "y": 640,
+        "wires": [
+            [
+                "b097164c598a72c9"
+            ]
+        ]
+    },
+    {
+        "id": "b097164c598a72c9",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Parsear + preparar INSERT",
+        "func": "const c = msg.payload.current;\nif (!c) { node.error('Open-Meteo: resposta inesperada', msg); return null; }\nconst temp = parseFloat(c.temperature_2m.toFixed(2));\nconst umi  = parseFloat(c.relative_humidity_2m.toFixed(2));\nconst hi = parseFloat((-8.78469475556+1.61139411*temp+2.33854883889*umi-0.14611605*temp*umi-0.012308094*temp*temp-0.0164248277778*umi*umi+0.002211732*temp*temp*umi+0.00072546*temp*umi*umi-0.000003582*temp*temp*umi*umi).toFixed(2));\nlet nivel = 'conforto';\nif (hi >= 54) nivel = 'perigo_extremo';\nelse if (hi >= 41) nivel = 'perigo';\nelse if (hi >= 32) nivel = 'extrema_cautela';\nelse if (hi >= 27) nivel = 'cautela';\nmsg.topic = 'INSERT INTO leituras (fonte, temperatura, umidade, heat_index, nivel_alerta, criado_em) VALUES (?, ?, ?, ?, ?, NOW())';\nmsg.payload = ['openmeteo', temp, umi, hi, nivel];\nmsg._dados = { fonte: 'openmeteo', temperatura: temp, umidade: umi, heat_index: hi, nivel };\nreturn msg;",
+        "outputs": 1,
+        "x": 730,
+        "y": 640,
+        "wires": [
+            [
+                "5e0685d5d81e0dee"
+            ]
+        ]
+    },
+    {
+        "id": "5e0685d5d81e0dee",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "INSERT openmeteo",
+        "x": 950,
+        "y": 640,
+        "wires": [
+            [
+                "4a6b2aa5e00502bb"
+            ]
+        ]
+    },
+    {
+        "id": "4a6b2aa5e00502bb",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Rotear openmeteo → card",
+        "func": "const d = msg._dados;\nif (!d) return [null, null];\nconst nivelLabel = { conforto:'Conforto', cautela:'Cautela', extrema_cautela:'Cautela Extrema', perigo:'Perigo', perigo_extremo:'Perigo Extremo' };\nconst nivelCor   = { conforto:'#3B6D11', cautela:'#854F0B', extrema_cautela:'#854F0B', perigo:'#A32D2D', perigo_extremo:'#501313' };\nconst nivelBg    = { conforto:'#EAF3DE', cautela:'#FAEEDA', extrema_cautela:'#FAEEDA', perigo:'#FCEBEB', perigo_extremo:'#FCEBEB' };\nconst nivelDot   = { conforto:'#639922', cautela:'#BA7517', extrema_cautela:'#BA7517', perigo:'#E24B4A', perigo_extremo:'#A32D2D' };\nreturn [\n    { payload: {\n        temperatura: d.temperatura, umidade: d.umidade, heat_index: d.heat_index,\n        nivel_label: nivelLabel[d.nivel] || d.nivel,\n        nivel_cor:   nivelCor[d.nivel]   || '#333',\n        nivel_bg:    nivelBg[d.nivel]    || '#eee',\n        nivel_dot:   nivelDot[d.nivel]   || '#999',\n        ts: new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })\n    }},\n    { payload: d.temperatura, topic: 'openmeteo' }\n];",
+        "outputs": 2,
+        "x": 1170,
+        "y": 640,
+        "wires": [
+            [
+                "87bcd14e36b81940"
+            ],
+            [
+                "4efb95ef57cb3010"
+            ]
+        ]
+    },
+    {
+        "id": "61b0a434f93fc66c",
+        "type": "mqtt out",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Publish Alerta",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "broker": "broker_mosquitto",
+        "x": 1060,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "d882e2e3a842fdd0",
+        "type": "inject",
+        "z": "b82cd2a8bd2c1565",
+        "name": "A cada 1 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "online",
+        "payloadType": "str",
+        "x": 120,
+        "y": 840,
+        "wires": [
+            [
+                "5cd2a81cd7303378"
+            ]
+        ]
+    },
+    {
+        "id": "5cd2a81cd7303378",
+        "type": "mqtt out",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Heartbeat",
+        "topic": "sistema/status",
+        "qos": "0",
+        "retain": "true",
+        "broker": "broker_mosquitto",
+        "x": 320,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "38a35ed738d1b71f",
+        "type": "http in",
+        "z": "b82cd2a8bd2c1565",
+        "name": "GET /api/leituras",
+        "url": "/api/leituras",
+        "method": "get",
+        "upload": false,
+        "x": 120,
+        "y": 920,
+        "wires": [
+            [
+                "e25053f1424061cd"
+            ]
+        ]
+    },
+    {
+        "id": "e25053f1424061cd",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Query API",
+        "func": "const limit = parseInt(msg.req.query.limit) || 50000;\nconst fonte = msg.req.query.fonte || null;\nif (fonte) {\n    msg.topic   = 'SELECT * FROM leituras WHERE fonte = ? ORDER BY criado_em DESC LIMIT ?';\n    msg.payload = [fonte, limit];\n} else {\n    msg.topic   = 'SELECT * FROM leituras ORDER BY criado_em DESC LIMIT ?';\n    msg.payload = [limit];\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 920,
+        "wires": [
+            [
+                "f5301cda6b67d6d2"
+            ]
+        ]
+    },
+    {
+        "id": "f5301cda6b67d6d2",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT API",
+        "x": 510,
+        "y": 920,
+        "wires": [
+            [
+                "a1dd485cf6e7841d"
+            ]
+        ]
+    },
+    {
+        "id": "c891a8debc9ad82c",
+        "type": "http response",
+        "z": "b82cd2a8bd2c1565",
+        "name": "JSON Response",
+        "statusCode": "200",
+        "headers": {
+            "content-type": "application/json"
+        },
+        "x": 920,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "6b0c1630c7a1dafa",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_dashboard",
+        "page": "",
+        "ui": "",
+        "name": "Dashboard",
+        "order": 1,
+        "width": 12,
+        "height": "18",
+        "format": "<template>\n  <div class=\"db-page\">\n    <div class=\"db-header\">\n      <h1 class=\"db-title\">Histórico de Leituras</h1>\n      <p class=\"db-sub\">Análise temporal · comparativo entre fontes</p>\n    </div>\n    <div class=\"db-filter-bar\">\n      <div class=\"filter-group\">\n        <label class=\"filter-label\">DE</label>\n        <input type=\"date\" v-model=\"de\" class=\"filter-input\" />\n      </div>\n      <div class=\"filter-group\">\n        <label class=\"filter-label\">ATÉ</label>\n        <input type=\"date\" v-model=\"ate\" class=\"filter-input\" />\n      </div>\n      <div class=\"filter-group\">\n        <label class=\"filter-label\">FONTE</label>\n        <select v-model=\"fonte\" class=\"filter-select\">\n          <option value=\"\">Todas</option>\n          <option value=\"dht22\">DHT22</option>\n          <option value=\"dht11\">DHT11</option>\n          <option value=\"openmeteo\">Open-Meteo</option>\n        </select>\n      </div>\n      <div class=\"filter-actions\">\n        <button class=\"btn-primary\" @click=\"buscar\">FILTRAR</button>\n        <button class=\"btn-outline\" @click=\"setRange('today')\">HOJE</button>\n        <button class=\"btn-outline\" @click=\"setRange('7d')\">7D</button>\n        <button class=\"btn-outline\" @click=\"setRange('30d')\">30D</button>\n        <button class=\"btn-outline\" @click=\"exportCSV\">↓ CSV</button>\n      </div>\n    </div>\n    <div v-if=\"loading\" class=\"loading-bar\">Carregando...</div>\n    <template v-if=\"!loading\">\n      <div class=\"section-label\">ESTATÍSTICAS DO PERÍODO</div>\n      <div class=\"stats-grid\">\n        <div v-for=\"f in fontesVisiveis\" :key=\"f.id\" class=\"stat-card\" :class=\"f.id\">\n          <div class=\"stat-card-header\">\n            <span class=\"stat-fonte\" :class=\"'txt-'+f.id\">{{ f.label }}</span>\n            <span class=\"stat-count\">{{ fmtN(getStats(f.id,'count')) }} leituras</span>\n          </div>\n          <div class=\"stat-metrics\">\n            <div class=\"stat-metric\">\n              <div class=\"stat-metric-label\">TEMP. MÉDIA</div>\n              <div class=\"stat-metric-value\">{{ fmt(getStats(f.id,'tempMedia')) }}°C</div>\n            </div>\n            <div class=\"stat-metric\">\n              <div class=\"stat-metric-label\">MIN / MAX</div>\n              <div class=\"stat-metric-value\">{{ fmt(getStats(f.id,'tempMin')) }} / {{ fmt(getStats(f.id,'tempMax')) }}°C</div>\n            </div>\n            <div class=\"stat-metric\">\n              <div class=\"stat-metric-label\">UMID. MÉDIA</div>\n              <div class=\"stat-metric-value\">{{ fmt(getStats(f.id,'umiMedia')) }}%</div>\n            </div>\n            <div class=\"stat-metric\">\n              <div class=\"stat-metric-label\">HI MÁXIMO</div>\n              <div class=\"stat-metric-value\">{{ fmt(getStats(f.id,'hiMax')) }}°C</div>\n            </div>\n          </div>\n          <div class=\"stat-footer\">\n            <span class=\"tag tag-green\">● {{ fmtN(getStats(f.id,'pctConforto')) }}% conforto</span>\n            <span class=\"tag tag-amber\">● {{ fmtN(getStats(f.id,'pctAtencao')) }}% atenção</span>\n            <span class=\"tag tag-red\">● {{ fmtN(getStats(f.id,'pctDesconforto')) }}% desconforto</span>\n          </div>\n        </div>\n      </div>\n      <div class=\"section-label\" style=\"margin-top:1.5rem\">ESTA SEMANA</div>\n      <div class=\"week-grid\">\n        <div v-for=\"dia in semana\" :key=\"dia.dateStr\" class=\"day-card\" :class=\"{ 'day-today': dia.isToday }\">\n          <div class=\"day-header\">\n            <span class=\"day-name\">{{ dia.nome }}</span>\n            <span class=\"day-date\">{{ dia.label }}</span>\n          </div>\n          <div v-if=\"dia.temDados\" class=\"day-body\">\n            <div class=\"day-metric\">\n              <span class=\"day-metric-label\">TEMP</span>\n              <span class=\"day-metric-value\">{{ fmt(dia.tempMedia) }}°C</span>\n            </div>\n            <div class=\"day-metric\">\n              <span class=\"day-metric-label\">MIN/MAX</span>\n              <span class=\"day-metric-value small\">{{ fmt(dia.tempMin) }}/{{ fmt(dia.tempMax) }}</span>\n            </div>\n            <div class=\"day-metric\">\n              <span class=\"day-metric-label\">UMID</span>\n              <span class=\"day-metric-value\">{{ fmt(dia.umiMedia) }}%</span>\n            </div>\n            <div class=\"day-status\" :style=\"{ background: dia.statusBg, color: dia.statusCor }\">\n              <span class=\"day-dot\" :style=\"{ background: dia.statusDot }\"></span>\n              {{ dia.statusLabel }}\n            </div>\n          </div>\n          <div v-else class=\"day-empty\">Sem dados</div>\n        </div>\n      </div>\n    </template>\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      hoje: new Date(),\n      de: '',\n      ate: '',\n      fonte: '',\n      loading: false,\n      rows: []\n    }\n  },\n  computed: {\n    fontesVisiveis() {\n      const all = [\n        {id:'dht22',label:'DHT22 (INTERNO)'},\n        {id:'dht11',label:'DHT11 (EXTERNO)'},\n        {id:'openmeteo',label:'OPEN-METEO'}\n      ]\n      return this.fonte ? all.filter(f=>f.id===this.fonte) : all\n    },\n    statsCache() {\n      const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null\n      const c = {}\n      ;['dht22','dht11','openmeteo'].forEach(fid => {\n        const r = this.rows.filter(x=>x.fonte===fid)\n        if(!r.length){c[fid]={};return}\n        const ts=r.map(x=>parseFloat(x.temperatura))\n        const us=r.map(x=>parseFloat(x.umidade))\n        const hs=r.map(x=>parseFloat(x.heat_index||0))\n        const n=r.length\n        c[fid]={count:n,tempMedia:avg(ts),tempMin:Math.min(...ts),tempMax:Math.max(...ts),\n          umiMedia:avg(us),hiMax:Math.max(...hs),\n          pctConforto:Math.round(r.filter(x=>x.nivel_alerta==='conforto').length/n*100),\n          pctAtencao:Math.round(r.filter(x=>['cautela','extrema_cautela'].includes(x.nivel_alerta)).length/n*100),\n          pctDesconforto:Math.round(r.filter(x=>['perigo','perigo_extremo'].includes(x.nivel_alerta)).length/n*100)}\n      })\n      return c\n    },\n    semana() {\n      const avg = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : null\n      const nomes=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], dias=[]\n      for(let i=6;i>=0;i--){\n        const d=new Date(this.hoje); d.setDate(this.hoje.getDate()-i)\n        const ds=d.toISOString().split('T')[0]\n        const r=this.rows.filter(x=>{\n          if(this.fonte&&x.fonte!==this.fonte)return false\n          return x.criado_em&&x.criado_em.substring(0,10)===ds\n        })\n        let tm=null,tn=null,tx=null,um=null\n        let sl='Conforto',sb='#EAF3DE',sc='#3B6D11',sd='#639922'\n        if(r.length){\n          const ts=r.map(x=>parseFloat(x.temperatura))\n          const us=r.map(x=>parseFloat(x.umidade))\n          const hs=r.map(x=>parseFloat(x.heat_index||0))\n          tm=avg(ts);tn=Math.min(...ts);tx=Math.max(...ts);um=avg(us)\n          const hm=avg(hs)\n          if(hm>=41){sl='Perigo';sb='#FCEBEB';sc='#A32D2D';sd='#E24B4A'}\n          else if(hm>=32){sl='Cautela Ext.';sb='#FAEEDA';sc='#854F0B';sd='#BA7517'}\n          else if(hm>=27){sl='Cautela';sb='#FAEEDA';sc='#854F0B';sd='#BA7517'}\n        }\n        const pZ=n=>String(n).padStart(2,'0')\n        dias.push({dateStr:ds,isToday:i===0,temDados:r.length>0,\n          nome:nomes[d.getDay()],label:`${pZ(d.getDate())}/${pZ(d.getMonth()+1)}`,\n          tempMedia:tm,tempMin:tn,tempMax:tx,umiMedia:um,\n          statusLabel:sl,statusBg:sb,statusCor:sc,statusDot:sd})\n      }\n      return dias\n    }\n  },\n  methods: {\n    getStats(fid,key){return this.statsCache[fid]?.[key]??null},\n    fmt(v,dec=1){if(v===null||v===undefined||isNaN(v))return '—';return parseFloat(v).toFixed(dec)},\n    fmtN(v){return this.fmt(v,0)},\n    setRange(r){\n      const toDS=d=>d.toISOString().split('T')[0]\n      const ago=n=>{const d=new Date(this.hoje);d.setDate(this.hoje.getDate()-n);return d}\n      this.ate=toDS(this.hoje)\n      if(r==='today')this.de=toDS(this.hoje)\n      else if(r==='7d')this.de=toDS(ago(6))\n      else if(r==='30d')this.de=toDS(ago(29))\n    },\n    async buscar(){\n      this.loading=true\n      try{\n        let url='/api/leituras?limit=50000'\n        if(this.fonte)url+='&fonte='+this.fonte\n        const res=await fetch(url)\n        let data=await res.json()\n        const deD=this.de?new Date(this.de+'T00:00:00'):null\n        const atD=this.ate?new Date(this.ate+'T23:59:59'):null\n        if(deD||atD)data=data.filter(x=>{\n          const t=new Date(x.criado_em)\n          if(deD&&t<deD)return false\n          if(atD&&t>atD)return false\n          return true\n        })\n        this.rows=data\n      }catch(e){console.error(e)}\n      this.loading=false\n    },\n    exportCSV(){\n      if(!this.rows.length)return\n      const cols=['fonte','temperatura','umidade','heat_index','nivel_alerta','criado_em']\n      const lines=[cols.join(',')]\n      this.rows.forEach(r=>lines.push(cols.map(c=>r[c]??'').join(',')))\n      const a=document.createElement('a')\n      a.href=URL.createObjectURL(new Blob([lines.join('\\n')],{type:'text/csv'}))\n      a.download='leituras.csv';a.click()\n    }\n  },\n  mounted(){\n    const toDS=d=>d.toISOString().split('T')[0]\n    const ago=n=>{const d=new Date(this.hoje);d.setDate(this.hoje.getDate()-n);return d}\n    this.ate=toDS(this.hoje)\n    this.de=toDS(ago(6))\n    this.buscar()\n  }\n}\n</script>\n\n<style>\n.db-page{font-family:sans-serif;padding:1.25rem;background:#f5f5f0;min-height:100vh}\n.db-header{margin-bottom:1.25rem}\n.db-title{font-size:20px;font-weight:600;color:#111;margin:0}\n.db-sub{font-size:13px;color:#888;margin:3px 0 0}\n.db-filter-bar{background:#fff;border:0.5px solid #e0e0e0;border-radius:12px;padding:1rem 1.25rem;display:flex;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem}\n.filter-group{display:flex;flex-direction:column;gap:4px}\n.filter-label{font-size:10px;letter-spacing:0.09em;color:#888}\n.filter-input,.filter-select{font-size:13px;border:0.5px solid #ddd;border-radius:8px;padding:6px 10px;background:#fff;color:#111;outline:none}\n.filter-actions{display:flex;gap:8px;align-items:center;margin-left:auto;flex-wrap:wrap}\n.btn-primary{background:#1D9E75;color:#fff;border:none;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:600;cursor:pointer}\n.btn-outline{background:#fff;color:#555;border:0.5px solid #ddd;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer}\n.loading-bar{text-align:center;padding:2rem;color:#888;font-size:14px}\n.section-label{font-size:11px;letter-spacing:0.1em;color:#999;margin-bottom:0.75rem}\n.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:0.5rem}\n.stat-card{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem 1.25rem}\n.stat-card.dht22{border-top:2.5px solid #1D9E75}\n.stat-card.dht11{border-top:2.5px solid #378ADD}\n.stat-card.openmeteo{border-top:2.5px solid #BA7517}\n.stat-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.85rem}\n.stat-fonte{font-size:12px;font-weight:700;letter-spacing:0.07em}\n.txt-dht22{color:#0F6E56}.txt-dht11{color:#185FA5}.txt-openmeteo{color:#854F0B}\n.stat-count{font-size:11px;color:#aaa}\n.stat-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0.85rem}\n.stat-metric-label{font-size:10px;letter-spacing:0.08em;color:#aaa;margin-bottom:2px}\n.stat-metric-value{font-size:18px;font-weight:500;color:#111}\n.stat-footer{display:flex;gap:10px;padding-top:0.75rem;border-top:0.5px solid #eee;flex-wrap:wrap}\n.tag{font-size:11px;font-weight:500}\n.tag-green{color:#3B6D11}.tag-amber{color:#854F0B}.tag-red{color:#A32D2D}\n.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}\n.day-card{background:#fff;border-radius:10px;border:0.5px solid #e0e0e0;padding:0.85rem}\n.day-card.day-today{border:1.5px solid #1D9E75}\n.day-header{display:flex;flex-direction:column;margin-bottom:0.75rem;border-bottom:0.5px solid #eee;padding-bottom:0.5rem}\n.day-name{font-size:13px;font-weight:600;color:#111}\n.day-date{font-size:11px;color:#aaa;margin-top:1px}\n.day-body{display:flex;flex-direction:column;gap:6px}\n.day-metric{display:flex;justify-content:space-between;align-items:baseline}\n.day-metric-label{font-size:10px;letter-spacing:0.07em;color:#aaa}\n.day-metric-value{font-size:14px;font-weight:500;color:#111}\n.day-metric-value.small{font-size:12px}\n.day-status{border-radius:5px;padding:4px 8px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;margin-top:4px}\n.day-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}\n.day-empty{font-size:12px;color:#ccc;text-align:center;padding:1rem 0}\n</style>",
+        "storeOutMessages": false,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 110,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a1dd485cf6e7841d",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Serializar datas",
+        "func": "msg.payload = msg.payload.map(r => ({\n    ...r,\n    criado_em: r.criado_em instanceof Date\n        ? r.criado_em.toISOString().replace('T',' ').substring(0,19)\n        : r.criado_em\n}));\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 920,
+        "wires": [
+            [
+                "c891a8debc9ad82c"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_contexto",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Buscar contexto MySQL",
+        "func": "const tipo  = msg.payload.tipo;\nconst horas = msg.payload.horas || 6;\nmsg._tipo   = tipo;\nmsg._horas  = horas;\nmsg.topic   = `SELECT fonte,\n    ROUND(AVG(temperatura),2) AS temp_media,\n    ROUND(MIN(temperatura),2) AS temp_min,\n    ROUND(MAX(temperatura),2) AS temp_max,\n    ROUND(AVG(umidade),2)     AS umid_media,\n    ROUND(AVG(heat_index),2)  AS hi_medio,\n    ROUND(MAX(heat_index),2)  AS hi_max,\n    COUNT(*) AS total\nFROM leituras\nWHERE criado_em >= NOW() - INTERVAL ${horas} HOUR\nGROUP BY fonte`;\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "x": 550,
+        "y": 1040,
+        "wires": [
+            [
+                "mysql_ia_contexto"
+            ]
+        ]
+    },
+    {
+        "id": "mysql_ia_contexto",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT contexto IA",
+        "x": 780,
+        "y": 1040,
+        "wires": [
+            [
+                "fn_ia_montar_prompt"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_montar_prompt",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar prompt",
+        "func": "\nconst tipo  = msg._tipo;\nconst horas = msg._horas;\nconst resumo = msg.payload;\n\nlet ctx = `Dados do Monitor Climático — Catanduva, SP, Brasil\\nÚltimas ${horas}h:\\n`;\nfor (const r of resumo) {\n    ctx += `Fonte ${r.fonte}: temp média ${r.temp_media}°C (min ${r.temp_min}, max ${r.temp_max}), umidade média ${r.umid_media}%, Heat Index médio ${r.hi_medio}°C, ${r.total} leituras\\n`;\n}\n\nconst sufixos = {\n    rapida:   'Faça uma análise rápida das condições climáticas atuais. Seja direto. Máximo 4 linhas.',\n    conforto: 'Analise conforto térmico interno (DHT22) vs externo (DHT11/Open-Meteo). Tempo fora da zona ASHRAE (20-26°C, 30-60% UR). Recomendações práticas.',\n    anomalia: 'Detecte anomalias: picos, discrepâncias entre sensores, leituras suspeitas. Explique causas prováveis.',\n    previsao: 'Com base no padrão histórico e Open-Meteo, estime como o ambiente interno se comportará nas próximas 3-6h. Melhor horário para ventilação natural.',\n    diaria:   'Relatório diário: padrão de temperatura ao longo do dia, qualidade do ar, comparação entre as três fontes, inércia térmica, recomendações.',\n    semanal:  'Relatório semanal: tendências, eficiência de isolamento térmico, drift entre DHT11 e DHT22, recomendações de manutenção.'\n};\n\nconst prompt = ctx + '\\n' + (sufixos[tipo] || 'Faça uma análise geral.');\n\nmsg._prompt = prompt;\nmsg._tipo   = tipo;\n\nmsg.url     = 'https://api.deepseek.com/v1/chat/completions';\nmsg.method  = 'POST';\nmsg.headers = {\n    'Content-Type':  'application/json',\n    'Authorization': 'Bearer sk-ee1ca89d83434633b0d62f4c4b22a5fc'\n};\nmsg.payload = JSON.stringify({\n    model:       'deepseek-chat',\n    max_tokens:  600,\n    temperature: 0.4,\n    messages: [\n        { role: 'system', content: 'Você é um especialista em conforto térmico e análise de dados climáticos. Responda em português brasileiro. Seja técnico mas acessível. Sem markdown.' },\n        { role: 'user',   content: prompt }\n    ]\n});\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1000,
+        "y": 1040,
+        "wires": [
+            [
+                "http_deepseek"
+            ]
+        ]
+    },
+    {
+        "id": "http_deepseek",
+        "type": "http request",
+        "z": "b82cd2a8bd2c1565",
+        "name": "POST DeepSeek",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 1220,
+        "y": 1040,
+        "wires": [
+            [
+                "fn_ia_processar_resp"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_processar_resp",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Processar resposta IA",
+        "func": "\nconst body   = msg.payload;\nconst tipo   = msg._tipo;\nconst agora  = new Date().toISOString().replace('T',' ').substring(0,19);\n\nif (!body || !body.choices || !body.choices[0]) {\n    msg.payload = { erro: 'DeepSeek não respondeu. Tente novamente.' };\n    return [msg, null];\n}\n\nconst texto  = body.choices[0].message.content.trim();\nconst tokens = body.usage?.total_tokens || null;\n\n// Prepara INSERT\nconst msgInsert = {\n    topic:   'INSERT INTO analises_ia (tipo, resultado, tokens_usados, gerado_em) VALUES (?, ?, ?, NOW())',\n    payload: [tipo, texto, tokens],\n    _resposta: { resultado: texto, tipo, tokens_usados: tokens, gerado_em: agora }\n};\n\nreturn [null, msgInsert];\n",
+        "outputs": 2,
+        "x": 1460,
+        "y": 1040,
+        "wires": [
+            [
+                "7777c1fdc2ac402b"
+            ],
+            [
+                "mysql_ia_insert"
+            ]
+        ]
+    },
+    {
+        "id": "mysql_ia_insert",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "INSERT analise_ia",
+        "x": 1710,
+        "y": 1040,
+        "wires": [
+            [
+                "fn_ia_resposta_ok"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_resposta_ok",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar resposta OK",
+        "func": "msg.payload = msg._resposta;\nreturn msg;",
+        "outputs": 1,
+        "x": 1940,
+        "y": 1040,
+        "wires": [
+            [
+                "7777c1fdc2ac402b"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_buscar_hist",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Query histórico IA",
+        "func": "msg.topic   = 'SELECT tipo, resultado, tokens_usados, DATE_FORMAT(gerado_em, \\'%d/%m %H:%i\\') AS gerado_em FROM analises_ia ORDER BY gerado_em DESC LIMIT 5';\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "x": 540,
+        "y": 1140,
+        "wires": [
+            [
+                "mysql_ia_hist"
+            ]
+        ]
+    },
+    {
+        "id": "mysql_ia_hist",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT hist IA",
+        "x": 760,
+        "y": 1140,
+        "wires": [
+            [
+                "fn_ia_formatar_hist"
+            ]
+        ]
+    },
+    {
+        "id": "fn_ia_formatar_hist",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Formatar histórico",
+        "func": "msg.payload = { historico: msg.payload || [] };\nreturn msg;",
+        "outputs": 1,
+        "x": 960,
+        "y": 1140,
+        "wires": [
+            [
+                "7777c1fdc2ac402b"
+            ]
+        ]
+    },
+    {
+        "id": "debug_leds",
+        "type": "debug",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Comando LED",
+        "active": true,
+        "tosidebar": true,
+        "complete": "payload",
+        "x": 2580,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "mqtt_sub_status_esp3",
+        "type": "mqtt in",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Status ESP32 #3 (HiveMQ)",
+        "topic": "leds/status",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "b17b94715e054110",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 1780,
+        "y": 460,
+        "wires": [
+            [
+                "fn_leds_status"
+            ]
+        ]
+    },
+    {
+        "id": "fn_leds_status",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Formatar status",
+        "func": "// ESP32 publica { 'online': true } em leds/status\nconst online = msg.payload?.online ?? false;\nmsg.payload  = { tipo: 'status', online };\nreturn msg;",
+        "outputs": 1,
+        "x": 2040,
+        "y": 460,
+        "wires": [
+            [
+                "9f043435cefe3033"
+            ]
+        ]
+    },
+    {
+        "id": "e84ff73915566a30",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Roteador LEDs",
+        "func": "const acao = msg.payload?.acao;\nif (acao === 'led')  return [msg, null];\nif (acao === 'oled') return [null, msg];\nreturn [null, null];",
+        "outputs": 2,
+        "x": 2020,
+        "y": 340,
+        "wires": [
+            [
+                "fn_leds_payload"
+            ],
+            [
+                "fn_oled_payload"
+            ]
+        ]
+    },
+    {
+        "id": "fn_oled_payload",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar comando OLED",
+        "func": "const design = msg.payload.design;\nmsg.topic   = 'oled/design';\nmsg.payload = JSON.stringify({ design });\nmsg.qos     = 1;\nmsg.retain  = true;\nreturn msg;",
+        "outputs": 1,
+        "x": 2350,
+        "y": 440,
+        "wires": [
+            [
+                "mqtt_pub_oled"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_pub_oled",
+        "type": "mqtt out",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Publish OLED (HiveMQ)",
+        "topic": "",
+        "qos": "1",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b17b94715e054110",
+        "x": 2610,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "mqtt_pub_leds",
+        "type": "mqtt out",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Publish LED (HiveMQ)",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "b17b94715e054110",
+        "x": 2600,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "fn_leds_payload",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar comando LED",
+        "func": "const estado = msg.payload.estado;\n// Payload que o ESP32 vai receber\n// estado pode ser: 'verde', 'amarelo', 'vermelho', 'off'\nmsg.topic   = 'leds/comando';\nmsg.payload = JSON.stringify({ led: estado });\nmsg.qos     = 1;\nmsg.retain  = false;\nreturn msg;",
+        "outputs": 1,
+        "x": 2340,
+        "y": 340,
+        "wires": [
+            [
+                "mqtt_pub_leds",
+                "debug_leds"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_pub_oled_dados",
+        "type": "mqtt out",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Publish dados OLED (HiveMQ)",
+        "topic": "",
+        "qos": "0",
+        "retain": "true",
+        "broker": "b17b94715e054110",
+        "x": 1370,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "e8d8e58c71e7a45e",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Preparar dados p/ OLED",
+        "func": "const d = msg._dados;\nif (!d) return [null, null];\nif (d.fonte !== 'dht22') return [null, null];\n\nconst nivelLabel = {\n    conforto:        'CONFORTO',\n    cautela:         'CAUTELA',\n    extrema_cautela: 'CAUT.EXT.',\n    perigo:          'PERIGO',\n    perigo_extremo:  'PERIGO EXT'\n};\n\nconst msgHiveMQ = {\n    topic:   'oled/dados',\n    payload: JSON.stringify({\n        temperatura: d.temperatura,\n        umidade:     d.umidade,\n        heat_index:  d.heat_index,\n        nivel:       d.nivel\n    }),\n    qos:    0,\n    retain: true\n};\n\nconst msgDash = {\n    payload: {\n        tipo:        'dados',\n        temperatura: d.temperatura,\n        umidade:     d.umidade,\n        nivel_label: nivelLabel[d.nivel] || 'CONFORTO'\n    }\n};\n\nreturn [[msgHiveMQ], [msgDash]];",
+        "outputs": 2,
+        "x": 1090,
+        "y": 320,
+        "wires": [
+            [
+                "mqtt_pub_oled_dados"
+            ],
+            [
+                "9f043435cefe3033"
+            ]
+        ]
+    },
+    {
+        "id": "9f043435cefe3033",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_leds",
+        "name": "Controle LEDs + OLED",
+        "order": 1,
+        "width": 12,
+        "height": 18,
+        "format": "<template>\n  <div class=\"led-page\">\n\n    <div class=\"led-header\">\n      <div>\n        <h1 class=\"led-title\">Controle · ESP32 #3</h1>\n        <p class=\"led-sub\">HiveMQ Cloud · LEDs + OLED</p>\n      </div>\n      <div class=\"led-status-wrap\">\n        <span class=\"led-status-dot\" :class=\"online ? 'dot-online' : 'dot-offline'\"></span>\n        <span class=\"led-status-txt\">{{ online ? 'Online' : 'Offline' }}</span>\n      </div>\n    </div>\n\n    <div class=\"section-label\">LEDS</div>\n    <div class=\"led-visual\">\n      <div class=\"led-bulb-wrap\" v-for=\"led in leds\" :key=\"led.id\">\n        <div class=\"led-bulb\"\n             :class=\"['led-bulb--' + led.cor, { 'led-bulb--on': ledAtivo === led.id }]\"\n             @click=\"acenderLed(led.id)\">\n          <span class=\"led-brilho\" v-if=\"ledAtivo === led.id\"></span>\n        </div>\n        <span class=\"led-bulb-label\">{{ led.label }}</span>\n      </div>\n    </div>\n    <div class=\"led-btn-grid\">\n      <button v-for=\"led in leds\" :key=\"led.id\"\n              class=\"led-btn\" :class=\"['led-btn--' + led.cor, { 'led-btn--active': ledAtivo === led.id }]\"\n              @click=\"acenderLed(led.id)\">{{ led.label }}</button>\n      <button class=\"led-btn led-btn--off\" :class=\"{ 'led-btn--active': ledAtivo === 'off' }\"\n              @click=\"apagarLed\">Apagar</button>\n    </div>\n\n    <div class=\"section-label\" style=\"margin-top:1rem\">DISPLAY OLED</div>\n    <div class=\"oled-grid\">\n\n      <div class=\"oled-card\" :class=\"{ 'oled-card--active': oledAtivo === 'alternado' }\"\n           @click=\"selecionarOled('alternado')\">\n        <div class=\"oled-preview\">\n          <svg viewBox=\"0 0 128 64\" xmlns=\"http://www.w3.org/2000/svg\" class=\"oled-svg\">\n            <rect width=\"128\" height=\"64\" fill=\"#0a0a0a\" rx=\"2\"/>\n            <text x=\"64\" y=\"28\" text-anchor=\"middle\" fill=\"#ffffff\" font-size=\"28\" font-family=\"monospace\" font-weight=\"bold\">{{ tempOled }}</text>\n            <text x=\"64\" y=\"46\" text-anchor=\"middle\" fill=\"#ffffff\" font-size=\"14\" font-family=\"monospace\">°C</text>\n            <circle cx=\"54\" cy=\"58\" r=\"3\" fill=\"#ffffff\" opacity=\"0.9\"/>\n            <circle cx=\"74\" cy=\"58\" r=\"3\" fill=\"#ffffff\" opacity=\"0.3\"/>\n            <text x=\"82\" y=\"61\" fill=\"#888888\" font-size=\"5\" font-family=\"monospace\">alterna</text>\n          </svg>\n        </div>\n        <div class=\"oled-info\">\n          <div class=\"oled-nome\">Alternado</div>\n          <div class=\"oled-desc\">Pisca alternando temperatura e umidade em fonte grande.</div>\n        </div>\n        <div class=\"oled-select-btn\" :class=\"{ active: oledAtivo === 'alternado' }\">\n          {{ oledAtivo === 'alternado' ? '✓ Ativo' : 'Selecionar' }}\n        </div>\n      </div>\n\n      <div class=\"oled-card\" :class=\"{ 'oled-card--active': oledAtivo === 'conforto' }\"\n           @click=\"selecionarOled('conforto')\">\n        <div class=\"oled-preview\">\n          <svg viewBox=\"0 0 128 64\" xmlns=\"http://www.w3.org/2000/svg\" class=\"oled-svg\">\n            <rect width=\"128\" height=\"64\" fill=\"#0a0a0a\" rx=\"2\"/>\n            <line x1=\"0\" y1=\"44\" x2=\"128\" y2=\"44\" stroke=\"#ffffff\" stroke-width=\"0.5\" opacity=\"0.3\"/>\n            <text x=\"4\" y=\"32\" fill=\"#ffffff\" font-size=\"22\" font-family=\"monospace\" font-weight=\"bold\">{{ tempOled }}°C</text>\n            <text x=\"4\" y=\"42\" fill=\"#aaaaaa\" font-size=\"10\" font-family=\"monospace\">Umid: {{ umiOled }}%</text>\n            <text x=\"64\" y=\"57\" text-anchor=\"middle\" fill=\"#ffffff\" font-size=\"10\" font-family=\"monospace\" font-weight=\"bold\">{{ nivelOled }}</text>\n          </svg>\n        </div>\n        <div class=\"oled-info\">\n          <div class=\"oled-nome\">Conforto</div>\n          <div class=\"oled-desc\">Temperatura grande, umidade e nível de conforto no rodapé.</div>\n        </div>\n        <div class=\"oled-select-btn\" :class=\"{ active: oledAtivo === 'conforto' }\">\n          {{ oledAtivo === 'conforto' ? '✓ Ativo' : 'Selecionar' }}\n        </div>\n      </div>\n\n      <div class=\"oled-card\" :class=\"{ 'oled-card--active': oledAtivo === 'barra' }\"\n           @click=\"selecionarOled('barra')\">\n        <div class=\"oled-preview\">\n          <svg viewBox=\"0 0 128 64\" xmlns=\"http://www.w3.org/2000/svg\" class=\"oled-svg\">\n            <rect width=\"128\" height=\"64\" fill=\"#0a0a0a\" rx=\"2\"/>\n            <text x=\"4\" y=\"20\" fill=\"#ffffff\" font-size=\"18\" font-family=\"monospace\" font-weight=\"bold\">{{ tempOled }}°C</text>\n            <text x=\"4\" y=\"40\" fill=\"#ffffff\" font-size=\"18\" font-family=\"monospace\" font-weight=\"bold\">{{ umiOled }}%</text>\n            <rect x=\"4\" y=\"50\" width=\"120\" height=\"7\" fill=\"#1a1a1a\" rx=\"3\"/>\n            <rect x=\"4\" y=\"50\" :width=\"barraW\" height=\"7\" fill=\"#ffffff\" rx=\"3\"/>\n            <text x=\"4\" y=\"63\" fill=\"#666666\" font-size=\"5\" font-family=\"monospace\">0%</text>\n            <text x=\"108\" y=\"63\" fill=\"#666666\" font-size=\"5\" font-family=\"monospace\">100%</text>\n          </svg>\n        </div>\n        <div class=\"oled-info\">\n          <div class=\"oled-nome\">Barra</div>\n          <div class=\"oled-desc\">Temperatura e umidade com barra de progresso da umidade.</div>\n        </div>\n        <div class=\"oled-select-btn\" :class=\"{ active: oledAtivo === 'barra' }\">\n          {{ oledAtivo === 'barra' ? '✓ Ativo' : 'Selecionar' }}\n        </div>\n      </div>\n\n    </div>\n\n    <div class=\"led-log\">\n      <div class=\"led-log-label\">ÚLTIMOS COMANDOS</div>\n      <div v-for=\"(entry, i) in log\" :key=\"i\" class=\"led-log-item\">\n        <span class=\"led-log-cor\" :class=\"'log-' + entry.tipo\">{{ entry.label }}</span>\n        <span class=\"led-log-ts\">{{ entry.ts }}</span>\n      </div>\n      <div v-if=\"log.length === 0\" class=\"led-log-empty\">Nenhum comando enviado ainda.</div>\n    </div>\n\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      ledAtivo:  'off',\n      oledAtivo: null,\n      online:    false,\n      tempOled:  '—',\n      umiOled:   '—',\n      nivelOled: 'CONFORTO',\n      log: [],\n      leds: [\n        { id:'verde',    cor:'verde',    label:'Verde'    },\n        { id:'amarelo',  cor:'amarelo',  label:'Amarelo'  },\n        { id:'vermelho', cor:'vermelho', label:'Vermelho' }\n      ]\n    }\n  },\n  computed: {\n    barraW() {\n      const u = parseFloat(this.umiOled)\n      if (isNaN(u)) return 0\n      return Math.round((u / 100) * 116)\n    }\n  },\n  watch: {\n    msg(novo) {\n      if (!novo || !novo.payload) return\n      const p = novo.payload\n      if (p.tipo === 'status') {\n        this.online = p.online\n      }\n      if (p.tipo === 'dados') {\n        this.tempOled  = p.temperatura\n        this.umiOled   = p.umidade\n        this.nivelOled = p.nivel_label || 'CONFORTO'\n      }\n    }\n  },\n  methods: {\n    acenderLed(id) {\n      this.ledAtivo = id\n      this.send({ payload: { acao: 'led', estado: id } })\n      const labels = { verde:'LED Verde aceso', amarelo:'LED Amarelo aceso', vermelho:'LED Vermelho aceso' }\n      this.addLog(id, labels[id] || id)\n    },\n    apagarLed() {\n      this.ledAtivo = 'off'\n      this.send({ payload: { acao: 'led', estado: 'off' } })\n      this.addLog('off', 'LEDs apagados')\n    },\n    selecionarOled(id) {\n      this.oledAtivo = id\n      this.send({ payload: { acao: 'oled', design: id } })\n      const nomes = { alternado:'OLED: Alternado', conforto:'OLED: Conforto', barra:'OLED: Barra' }\n      this.addLog('oled', nomes[id] || id)\n    },\n    addLog(tipo, label) {\n      const ts = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })\n      this.log.unshift({ tipo, label, ts })\n      if (this.log.length > 8) this.log.pop()\n    }\n  }\n}\n</script>\n\n<style>\n.led-page{font-family:sans-serif;padding:1.25rem;background:#f5f5f0;min-height:100vh;display:flex;flex-direction:column;gap:1rem}\n.led-header{display:flex;justify-content:space-between;align-items:flex-start}\n.led-title{font-size:20px;font-weight:600;color:#111;margin:0}\n.led-sub{font-size:13px;color:#888;margin:3px 0 0}\n.led-status-wrap{display:flex;align-items:center;gap:6px;background:#fff;border:0.5px solid #e0e0e0;border-radius:20px;padding:5px 12px}\n.led-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}\n.dot-online{background:#22c55e;box-shadow:0 0 6px #22c55e}\n.dot-offline{background:#d1d5db}\n.led-status-txt{font-size:12px;font-weight:500;color:#555}\n.section-label{font-size:11px;letter-spacing:0.1em;color:#999}\n.led-visual{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1.5rem;display:flex;justify-content:center;gap:3rem}\n.led-bulb-wrap{display:flex;flex-direction:column;align-items:center;gap:0.6rem}\n.led-bulb{width:56px;height:56px;border-radius:50%;position:relative;cursor:pointer;transition:all 0.2s}\n.led-bulb--verde{background:#d1fae5;border:2px solid #6ee7b7}\n.led-bulb--verde.led-bulb--on{background:#22c55e;border-color:#16a34a;box-shadow:0 0 20px 6px #22c55e88}\n.led-bulb--amarelo{background:#fef9c3;border:2px solid #fde047}\n.led-bulb--amarelo.led-bulb--on{background:#eab308;border-color:#ca8a04;box-shadow:0 0 20px 6px #eab30888}\n.led-bulb--vermelho{background:#fee2e2;border:2px solid #fca5a5}\n.led-bulb--vermelho.led-bulb--on{background:#ef4444;border-color:#dc2626;box-shadow:0 0 20px 6px #ef444488}\n.led-brilho{position:absolute;width:16px;height:16px;background:rgba(255,255,255,0.6);border-radius:50%;top:8px;left:8px}\n.led-bulb-label{font-size:12px;font-weight:600;color:#374151}\n.led-btn-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}\n.led-btn{padding:9px 0;border-radius:8px;border:0.5px solid #e0e0e0;font-size:13px;font-weight:600;cursor:pointer;background:#fff;color:#374151;transition:all 0.15s}\n.led-btn--verde{border-color:#6ee7b7;color:#065f46}.led-btn--verde:hover,.led-btn--verde.led-btn--active{background:#22c55e;color:#fff;border-color:#16a34a}\n.led-btn--amarelo{border-color:#fde047;color:#713f12}.led-btn--amarelo:hover,.led-btn--amarelo.led-btn--active{background:#eab308;color:#fff;border-color:#ca8a04}\n.led-btn--vermelho{border-color:#fca5a5;color:#7f1d1d}.led-btn--vermelho:hover,.led-btn--vermelho.led-btn--active{background:#ef4444;color:#fff;border-color:#dc2626}\n.led-btn--off{border-color:#e0e0e0;color:#888}.led-btn--off:hover,.led-btn--off.led-btn--active{background:#374151;color:#fff}\n.oled-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}\n.oled-card{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem;cursor:pointer;transition:all 0.15s;display:flex;flex-direction:column;gap:0.75rem}\n.oled-card:hover{border-color:#6366f1;box-shadow:0 0 0 2px #e0e7ff}\n.oled-card--active{border-color:#6366f1;box-shadow:0 0 0 2px #e0e7ff;background:#fafafe}\n.oled-preview{background:#111;border-radius:6px;overflow:hidden;border:1px solid #333}\n.oled-svg{width:100%;height:auto;display:block}\n.oled-info{display:flex;flex-direction:column;gap:3px}\n.oled-nome{font-size:13px;font-weight:600;color:#111}\n.oled-desc{font-size:11px;color:#888;line-height:1.5}\n.oled-select-btn{text-align:center;padding:7px;border-radius:7px;font-size:12px;font-weight:600;border:0.5px solid #e0e0e0;color:#6366f1;background:#fff;transition:all 0.15s}\n.oled-card--active .oled-select-btn{background:#6366f1;color:#fff;border-color:#6366f1}\n.led-log{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem 1.25rem}\n.led-log-label{font-size:10px;letter-spacing:0.1em;color:#bbb;margin-bottom:0.5rem}\n.led-log-item{display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f3f4f6}\n.led-log-item:last-child{border-bottom:none}\n.led-log-cor{font-size:12px;font-weight:500}\n.log-verde{color:#16a34a}.log-amarelo{color:#ca8a04}.log-vermelho{color:#dc2626}.log-off{color:#6b7280}.log-oled{color:#6366f1}\n.led-log-ts{font-size:11px;color:#aaa}\n.led-log-empty{font-size:12px;color:#ccc;text-align:center;padding:0.5rem 0}\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 1790,
+        "y": 340,
+        "wires": [
+            [
+                "e84ff73915566a30"
+            ]
+        ]
+    },
+    {
+        "id": "d0bb62868083f406",
+        "type": "inject",
+        "z": "b82cd2a8bd2c1565",
+        "name": "A cada 6h",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "21600",
+        "crontab": "",
+        "once": false,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 1200,
+        "wires": [
+            [
+                "3bb52dd432639be6"
+            ]
+        ]
+    },
+    {
+        "id": "3bb52dd432639be6",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Query contexto automático",
+        "func": "msg._auto = true;\nmsg.topic = `\nSELECT\n    fonte,\n    DATE_FORMAT(criado_em, '%H:%i') AS hora,\n    ROUND(temperatura, 1)           AS temperatura,\n    ROUND(umidade, 0)               AS umidade,\n    ROUND(heat_index, 1)            AS heat_index,\n    nivel_alerta\nFROM leituras\nWHERE criado_em >= NOW() - INTERVAL 6 HOUR\nORDER BY fonte, criado_em ASC`;\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "x": 360,
+        "y": 1200,
+        "wires": [
+            [
+                "7d57cc20e2448afd"
+            ]
+        ]
+    },
+    {
+        "id": "7d57cc20e2448afd",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT 6h detalhado",
+        "x": 600,
+        "y": 1200,
+        "wires": [
+            [
+                "7d503b4220c6d9e7"
+            ]
+        ]
+    },
+    {
+        "id": "7d503b4220c6d9e7",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Montar prompt automático",
+        "func": "\nconst rows = msg.payload;\nif (!rows || rows.length === 0) {\n    node.warn('Sem dados para análise automática');\n    return null;\n}\n\n// Agrupa por fonte\nconst fontes = {};\nrows.forEach(r => {\n    if (!fontes[r.fonte]) fontes[r.fonte] = [];\n    fontes[r.fonte].push(r);\n});\n\n// Resumo por fonte\nconst agora = new Date();\nconst hora  = agora.getHours();\nlet periodo = hora >= 6 && hora < 12 ? 'manhã'\n            : hora >= 12 && hora < 18 ? 'tarde'\n            : hora >= 18 && hora < 24 ? 'noite'\n            : 'madrugada';\n\nlet ctx = `Análise automática das últimas 6 horas (período: ${periodo}) — Catanduva, SP\\n\\n`;\n\nfor (const [fonte, dados] of Object.entries(fontes)) {\n    const temps = dados.map(d => d.temperatura);\n    const umids = dados.map(d => d.umidade);\n    const his   = dados.map(d => d.heat_index);\n    const tMin  = Math.min(...temps).toFixed(1);\n    const tMax  = Math.max(...temps).toFixed(1);\n    const tMed  = (temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1);\n    const uMed  = (umids.reduce((a,b)=>a+b,0)/umids.length).toFixed(0);\n    const uMin  = Math.min(...umids).toFixed(0);\n    const uMax  = Math.max(...umids).toFixed(0);\n    const hiMax = Math.max(...his).toFixed(1);\n\n    // Pega primeira e última hora com valores\n    const primeira = dados[0];\n    const ultima   = dados[dados.length - 1];\n\n    // Detecta tendência\n    const tendencia = parseFloat(ultima.temperatura) > parseFloat(primeira.temperatura) ? 'subindo' : 'caindo';\n\n    const local = fonte === 'dht22' ? 'interno (DHT22)' : fonte === 'dht11' ? 'externo (DHT11)' : 'Open-Meteo';\n    ctx += `Sensor ${local}: temp média ${tMed}°C (min ${tMin} às ${primeira.hora}, max ${tMax}), `;\n    ctx += `umidade média ${uMed}% (min ${uMin}%, max ${uMax}%), `;\n    ctx += `Heat Index máx ${hiMax}°C, temperatura ${tendencia} ao longo do período.\\n`;\n}\n\nctx += `\\nTotal de leituras: ${rows.length}\\n`;\n\nconst prompt = ctx + `\nFaça uma análise narrativa e natural em 3-4 frases sobre como foram essas últimas 6h considerando:\n- Como estava a temperatura interna vs externa\n- Se o ambiente estava confortável, seco ou úmido\n- Qualquer tendência interessante observada\n- Use linguagem natural como se estivesse descrevendo para alguém o clima do período (${periodo})\n- Não use bullet points, escreva em parágrafo corrido`;\n\nmsg.url     = 'https://api.deepseek.com/v1/chat/completions';\nmsg.method  = 'POST';\nmsg.headers = {\n    'Content-Type':  'application/json',\n    'Authorization': 'Bearer sk-ee1ca89d83434633b0d62f4c4b22a5fc'\n};\nmsg.payload = JSON.stringify({\n    model:       'deepseek-chat',\n    max_tokens:  400,\n    temperature: 0.6,\n    messages: [\n        { role: 'system', content: 'Você é um assistente climático que descreve as condições do ambiente de forma natural e conversacional em português brasileiro. Seja conciso mas descritivo.' },\n        { role: 'user', content: prompt }\n    ]\n});\nreturn msg;\n",
+        "outputs": 1,
+        "x": 840,
+        "y": 1200,
+        "wires": [
+            [
+                "7a40a164397004df"
+            ]
+        ]
+    },
+    {
+        "id": "7a40a164397004df",
+        "type": "http request",
+        "z": "b82cd2a8bd2c1565",
+        "name": "POST DeepSeek Auto",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "authType": "",
+        "x": 1080,
+        "y": 1200,
+        "wires": [
+            [
+                "8b0206b78034f557"
+            ]
+        ]
+    },
+    {
+        "id": "8b0206b78034f557",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Salvar análise automática",
+        "func": "\nconst body  = msg.payload;\nif (!body || !body.choices || !body.choices[0]) {\n    node.warn('DeepSeek não respondeu na análise automática');\n    return null;\n}\n\nconst texto  = body.choices[0].message.content.trim();\nconst tokens = body.usage?.total_tokens || null;\nconst agora  = new Date().toISOString().replace('T',' ').substring(0,19);\n\nconst msgInsert = {\n    topic:   \"INSERT INTO analises_ia (tipo, resultado, tokens_usados, gerado_em) VALUES (?, ?, ?, NOW())\",\n    payload: ['automatica', texto, tokens],\n    _resposta: { resultado: texto, tokens_usados: tokens, gerado_em: agora }\n};\n\nreturn [msgInsert];\n",
+        "outputs": 1,
+        "x": 1310,
+        "y": 1200,
+        "wires": [
+            [
+                "288b078026d1d66e"
+            ]
+        ]
+    },
+    {
+        "id": "288b078026d1d66e",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "INSERT análise automática",
+        "x": 1550,
+        "y": 1200,
+        "wires": [
+            [
+                "a31973da444d6257"
+            ]
+        ]
+    },
+    {
+        "id": "a31973da444d6257",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Notificar card IA",
+        "func": "msg.payload = { acao: 'historico_auto' };\nreturn msg;",
+        "outputs": 1,
+        "x": 1780,
+        "y": 1200,
+        "wires": [
+            [
+                "3650192c57418a8e"
+            ]
+        ]
+    },
+    {
+        "id": "3650192c57418a8e",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Query histórico automático",
+        "func": "msg.topic   = \"SELECT resultado, tokens_usados, \"\n            + \"DATE_FORMAT(gerado_em, '%d/%m %H:%i') AS gerado_em \"\n            + \"FROM analises_ia WHERE tipo = 'automatica' \"\n            + \"ORDER BY gerado_em DESC LIMIT 4\";\nmsg.payload = [];\nreturn msg;",
+        "outputs": 1,
+        "x": 2010,
+        "y": 1200,
+        "wires": [
+            [
+                "4e07ad4f5f6d889f"
+            ]
+        ]
+    },
+    {
+        "id": "4e07ad4f5f6d889f",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT hist automático",
+        "x": 2270,
+        "y": 1200,
+        "wires": [
+            [
+                "3c33a9135a77a581"
+            ]
+        ]
+    },
+    {
+        "id": "3c33a9135a77a581",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Formatar hist automático",
+        "func": "msg.payload = { historico_auto: msg.payload || [] };\nreturn msg;",
+        "outputs": 1,
+        "x": 2510,
+        "y": 1200,
+        "wires": [
+            [
+                "7777c1fdc2ac402b"
+            ]
+        ]
+    },
+    {
+        "id": "e186ad36b6e680e1",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Roteador IA",
+        "func": "const acao = msg.payload?.acao;\nif (acao === 'analisar')       return [msg, null, null];\nif (acao === 'historico')      return [null, msg, null];\nif (acao === 'historico_auto') return [null, null, msg];\nreturn [null, null, null];",
+        "outputs": 3,
+        "x": 310,
+        "y": 1080,
+        "wires": [
+            [
+                "fn_ia_contexto"
+            ],
+            [
+                "fn_ia_buscar_hist"
+            ],
+            [
+                "3650192c57418a8e"
+            ]
+        ]
+    },
+    {
+        "id": "7777c1fdc2ac402b",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_ia",
+        "name": "Card IA",
+        "order": 1,
+        "width": 8,
+        "height": 14,
+        "format": "<template>\n  <div class=\"ia-card\">\n\n    <div class=\"ia-header\">\n      <span class=\"ia-title\">Análise IA</span>\n      <span class=\"ia-badge\">DeepSeek</span>\n    </div>\n\n    <!-- ETAPA 1: grade de botões -->\n    <div v-if=\"etapa === 1\" class=\"ia-grid\">\n      <div v-for=\"btn in botoes\" :key=\"btn.tipo\"\n           class=\"ia-option\" :class=\"{ 'ia-option--selected': selecionado === btn.tipo }\"\n           @click=\"selecionar(btn.tipo)\">\n        <span class=\"ia-option-icon\">{{ btn.icon }}</span>\n        <span class=\"ia-option-label\">{{ btn.label }}</span>\n      </div>\n    </div>\n\n    <!-- ETAPA 2: confirmação -->\n    <div v-if=\"etapa === 2 && !loading\" class=\"ia-confirmar\">\n      <button class=\"ia-back\" @click=\"voltar\">← Voltar</button>\n      <div class=\"ia-desc-card\">\n        <div class=\"ia-desc-titulo\">{{ descAtual.label }}</div>\n        <p class=\"ia-desc-texto\">{{ descAtual.desc }}</p>\n        <div class=\"ia-desc-meta\">\n          <span>Janela: {{ descAtual.janela }}</span>\n          <span>Tokens estimados: ~{{ descAtual.tokens }}</span>\n        </div>\n      </div>\n      <button class=\"ia-btn-analisar\" @click=\"analisar\">Executar análise</button>\n    </div>\n\n    <!-- LOADING -->\n    <div v-if=\"loading\" class=\"ia-loading\">\n      <span class=\"ia-spinner\"></span>\n      Analisando com DeepSeek...\n    </div>\n\n    <!-- RESULTADO -->\n    <div v-if=\"etapa === 3 && !loading\" class=\"ia-resultado\">\n      <div class=\"ia-resultado-header\">\n        <span class=\"ia-tipo-badge\">{{ labelDeTipo(tipoLabel) }}</span>\n        <span class=\"ia-ts\">{{ geradoEm }}</span>\n      </div>\n      <p class=\"ia-texto\">{{ resultado }}</p>\n      <div class=\"ia-tokens\" v-if=\"tokens\">{{ tokens }} tokens usados</div>\n      <button class=\"ia-btn-nova\" @click=\"nova\">Nova análise</button>\n    </div>\n\n    <!-- ERRO -->\n    <div v-if=\"erro && !loading\" class=\"ia-erro\">\n      {{ erro }}\n      <button class=\"ia-btn-nova\" @click=\"nova\" style=\"margin-top:8px\">Tentar novamente</button>\n    </div>\n\n    <!-- HISTÓRICO MANUAL (etapa 1) -->\n    <div v-if=\"etapa === 1 && historico.length > 0\" class=\"ia-historico\">\n      <div class=\"ia-hist-label\">ANÁLISES ANTERIORES</div>\n      <div v-for=\"(h, i) in historico\" :key=\"i\" class=\"ia-hist-item\" @click=\"verHistorico(h)\">\n        <span class=\"ia-hist-tipo\">{{ labelDeTipo(h.tipo) }}</span>\n        <span class=\"ia-hist-ts\">{{ h.gerado_em }}</span>\n      </div>\n    </div>\n\n    <!-- CARD AUTOMÁTICO -->\n    <div class=\"ia-auto-card\">\n      <div class=\"ia-auto-header\">\n        <div class=\"ia-auto-title-row\">\n          <span class=\"ia-auto-icon\">🕐</span>\n          <span class=\"ia-auto-title\">Resumo Automático</span>\n          <span class=\"ia-auto-badge\">a cada 6h</span>\n        </div>\n        <span class=\"ia-auto-sub\">Últimas 4 análises geradas automaticamente</span>\n      </div>\n\n      <div v-if=\"historicoAuto.length === 0\" class=\"ia-auto-empty\">\n        Aguardando primeira análise automática...\n      </div>\n\n      <div v-else class=\"ia-auto-lista\">\n        <!-- Primeiro item expandido por padrão -->\n        <div class=\"ia-auto-item ia-auto-item--destaque\">\n          <div class=\"ia-auto-item-header\" @click=\"toggleExpandido(-1)\">\n            <span class=\"ia-auto-item-ts\">{{ historicoAuto[0]?.gerado_em }}</span>\n            <span class=\"ia-auto-item-toggle\">{{ expandido === -1 ? '▲' : '▼' }}</span>\n          </div>\n          <p class=\"ia-auto-texto\" v-if=\"expandido !== -1\">{{ historicoAuto[0]?.resultado }}</p>\n          <p class=\"ia-auto-texto-collapsed\" v-else>{{ (historicoAuto[0]?.resultado || '').substring(0, 80) }}...</p>\n        </div>\n\n        <!-- Itens 2-4 colapsados -->\n        <div v-for=\"(h, i) in historicoAuto.slice(1)\" :key=\"i\"\n             class=\"ia-auto-item\">\n          <div class=\"ia-auto-item-header\" @click=\"toggleExpandido(i)\">\n            <span class=\"ia-auto-item-ts\">{{ h.gerado_em }}</span>\n            <span class=\"ia-auto-item-toggle\">{{ expandido === i ? '▲' : '▼' }}</span>\n          </div>\n          <p class=\"ia-auto-texto\" v-if=\"expandido === i\">{{ h.resultado }}</p>\n        </div>\n      </div>\n    </div>\n\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      etapa: 1,\n      selecionado: null,\n      loading: false,\n      resultado: null,\n      tipoLabel: '',\n      geradoEm: '',\n      tokens: null,\n      erro: null,\n      historico: [],\n      historicoAuto: [],\n      expandido: null,\n      botoes: [\n        { tipo:'rapida',   icon:'⚡', label:'Análise Rápida',\n          desc:'Visão geral das condições climáticas do momento em até 4 linhas.',\n          janela:'6h', tokens:200 },\n        { tipo:'conforto', icon:'🌡️', label:'Conforto Térmico',\n          desc:'Compara interno vs externo e calcula tempo fora da zona ASHRAE.',\n          janela:'6h', tokens:350 },\n        { tipo:'anomalia', icon:'🔍', label:'Detectar Anomalia',\n          desc:'Procura picos e discrepâncias entre sensores.',\n          janela:'6h', tokens:350 },\n        { tipo:'previsao', icon:'🔮', label:'Previsão 3–6h',\n          desc:'Estima comportamento interno nas próximas horas.',\n          janela:'6h', tokens:350 },\n        { tipo:'diaria',   icon:'📋', label:'Relatório Diário',\n          desc:'Relatório completo do dia com comparação entre fontes.',\n          janela:'24h', tokens:500 },\n        { tipo:'semanal',  icon:'📊', label:'Relatório Semanal',\n          desc:'Tendências de 7 dias e eficiência de isolamento térmico.',\n          janela:'168h', tokens:600 }\n      ]\n    }\n  },\n  computed: {\n    descAtual() {\n      return this.botoes.find(b => b.tipo === this.selecionado) || {}\n    }\n  },\n  mounted() {\n    this.send({ payload: { acao: 'historico' } })\n    this.send({ payload: { acao: 'historico_auto' } })\n  },\n  watch: {\n    msg(novo) {\n      if (!novo || !novo.payload) return\n      const p = novo.payload\n      if (p.erro)      { this.erro = p.erro; this.loading = false; return }\n      if (p.resultado) {\n        this.resultado = p.resultado\n        this.tipoLabel = p.tipo || this.selecionado\n        this.geradoEm  = p.gerado_em || ''\n        this.tokens    = p.tokens_usados || null\n        this.loading   = false\n        this.erro      = null\n        this.etapa     = 3\n        this.send({ payload: { acao: 'historico' } })\n      }\n      if (p.historico)      this.historico     = p.historico.slice(0, 5)\n      if (p.historico_auto) this.historicoAuto = p.historico_auto\n    }\n  },\n  methods: {\n    selecionar(tipo) { this.selecionado = tipo; this.etapa = 2; this.erro = null },\n    voltar()         { this.etapa = 1; this.selecionado = null },\n    nova()           { this.etapa = 1; this.selecionado = null; this.resultado = null; this.erro = null },\n    analisar() {\n      const horas = { rapida:6, conforto:6, anomalia:6, previsao:6, diaria:24, semanal:168 }\n      this.loading = true; this.resultado = null; this.erro = null\n      this.send({ payload: { acao:'analisar', tipo:this.selecionado, horas:horas[this.selecionado]||6 } })\n    },\n    verHistorico(h) {\n      this.selecionado = h.tipo\n      this.resultado   = h.resultado\n      this.tipoLabel   = h.tipo\n      this.geradoEm    = h.gerado_em\n      this.tokens      = h.tokens_usados\n      this.etapa       = 3\n    },\n    labelDeTipo(tipo) {\n      const b = this.botoes.find(x => x.tipo === tipo)\n      return b ? b.label : tipo\n    },\n    toggleExpandido(i) {\n      this.expandido = this.expandido === i ? null : i\n    }\n  }\n}\n</script>\n\n<style>\n.ia-card{font-family:sans-serif;background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem 1.25rem;border-top:2.5px solid #7c3aed;display:flex;flex-direction:column;gap:0.85rem}\n.ia-header{display:flex;justify-content:space-between;align-items:center}\n.ia-title{font-size:13px;font-weight:600;letter-spacing:0.07em;color:#5b21b6}\n.ia-badge{font-size:11px;color:#888;border:0.5px solid #ddd;border-radius:20px;padding:2px 10px}\n.ia-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}\n.ia-option{display:flex;flex-direction:column;align-items:center;gap:5px;padding:0.75rem 0.5rem;border-radius:10px;border:0.5px solid #e8e8e8;cursor:pointer;transition:all 0.15s;text-align:center}\n.ia-option:hover{border-color:#7c3aed;background:#f5f3ff}\n.ia-option--selected{border-color:#7c3aed;background:#f5f3ff}\n.ia-option-icon{font-size:20px;line-height:1}\n.ia-option-label{font-size:11px;font-weight:600;color:#374151;letter-spacing:0.03em}\n.ia-confirmar{display:flex;flex-direction:column;gap:0.85rem}\n.ia-back{background:none;border:none;color:#7c3aed;font-size:12px;cursor:pointer;padding:0;text-align:left;width:fit-content}\n.ia-back:hover{text-decoration:underline}\n.ia-desc-card{background:#f5f3ff;border-radius:10px;border:0.5px solid #ddd6fe;padding:1rem}\n.ia-desc-titulo{font-size:14px;font-weight:600;color:#5b21b6;margin-bottom:0.5rem}\n.ia-desc-texto{font-size:13px;color:#374151;line-height:1.65;margin:0 0 0.75rem}\n.ia-desc-meta{display:flex;gap:1rem;font-size:11px;color:#888}\n.ia-btn-analisar{background:#7c3aed;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;width:100%}\n.ia-btn-analisar:hover{background:#6d28d9}\n.ia-loading{display:flex;align-items:center;gap:8px;color:#888;font-size:13px;padding:1.5rem 0;justify-content:center}\n.ia-spinner{width:16px;height:16px;border:2px solid #e0e0e0;border-top-color:#7c3aed;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}\n@keyframes spin{to{transform:rotate(360deg)}}\n.ia-resultado{background:#fafafa;border-radius:8px;border:0.5px solid #e8e8e8;padding:0.85rem;display:flex;flex-direction:column;gap:0.6rem}\n.ia-resultado-header{display:flex;justify-content:space-between;align-items:center}\n.ia-tipo-badge{font-size:10px;letter-spacing:0.07em;background:#f5f3ff;color:#5b21b6;border-radius:4px;padding:2px 8px;font-weight:600}\n.ia-ts{font-size:11px;color:#aaa}\n.ia-texto{font-size:13px;color:#333;line-height:1.65;margin:0;white-space:pre-wrap}\n.ia-tokens{font-size:10px;color:#bbb;text-align:right}\n.ia-btn-nova{background:#fff;border:0.5px solid #ddd6fe;color:#5b21b6;border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;width:100%}\n.ia-btn-nova:hover{background:#f5f3ff}\n.ia-erro{background:#fff5f5;border:0.5px solid #fca5a5;border-radius:8px;padding:0.75rem;font-size:13px;color:#b91c1c;display:flex;flex-direction:column}\n.ia-historico{border-top:0.5px solid #eee;padding-top:0.75rem;display:flex;flex-direction:column;gap:4px}\n.ia-hist-label{font-size:10px;letter-spacing:0.09em;color:#bbb;margin-bottom:2px}\n.ia-hist-item{display:flex;justify-content:space-between;padding:5px 8px;border-radius:6px;cursor:pointer}\n.ia-hist-item:hover{background:#f9f9f9}\n.ia-hist-tipo{font-size:12px;color:#5b21b6;font-weight:500}\n.ia-hist-ts{font-size:11px;color:#aaa}\n.ia-auto-card{border-top:0.5px solid #eee;padding-top:0.85rem;display:flex;flex-direction:column;gap:0.6rem}\n.ia-auto-header{display:flex;flex-direction:column;gap:2px}\n.ia-auto-title-row{display:flex;align-items:center;gap:6px}\n.ia-auto-icon{font-size:14px}\n.ia-auto-title{font-size:12px;font-weight:600;color:#374151;letter-spacing:0.04em}\n.ia-auto-badge{font-size:10px;background:#f0fdf4;color:#15803d;border-radius:20px;padding:1px 8px;font-weight:500}\n.ia-auto-sub{font-size:11px;color:#aaa;margin-left:20px}\n.ia-auto-empty{font-size:12px;color:#ccc;text-align:center;padding:1rem 0;font-style:italic}\n.ia-auto-lista{display:flex;flex-direction:column;gap:6px}\n.ia-auto-item{background:#fafafa;border-radius:8px;border:0.5px solid #eee;padding:0.6rem 0.75rem}\n.ia-auto-item--destaque{background:#f0fdf4;border-color:#bbf7d0}\n.ia-auto-item-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}\n.ia-auto-item-ts{font-size:11px;font-weight:600;color:#555}\n.ia-auto-item-toggle{font-size:10px;color:#aaa}\n.ia-auto-texto{font-size:12px;color:#444;line-height:1.65;margin:0.5rem 0 0;white-space:pre-wrap}\n.ia-auto-texto-collapsed{font-size:12px;color:#666;margin:0.4rem 0 0;font-style:italic}\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 140,
+        "y": 1080,
+        "wires": [
+            [
+                "e186ad36b6e680e1"
+            ]
+        ]
+    },
+    {
+        "id": "ui_tpl_graficos",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "ui_group_graficos",
+        "page": "",
+        "ui": "",
+        "name": "Gráficos",
+        "order": 1,
+        "width": 12,
+        "height": "18",
+        "format": "<template>\n  <div class=\"chart-page\">\n\n    <div class=\"chart-header\">\n      <div>\n        <h1 class=\"chart-title\">Gráficos de Temperatura</h1>\n        <p class=\"chart-sub\">Comparativo entre sensores · últimas 24h</p>\n      </div>\n      <div class=\"chart-controls\">\n        <button class=\"ctrl-btn\" :class=\"{ active: janela === '1h'  }\" @click=\"setJanela('1h')\">1h</button>\n        <button class=\"ctrl-btn\" :class=\"{ active: janela === '6h'  }\" @click=\"setJanela('6h')\">6h</button>\n        <button class=\"ctrl-btn\" :class=\"{ active: janela === '12h' }\" @click=\"setJanela('12h')\">12h</button>\n        <button class=\"ctrl-btn\" :class=\"{ active: janela === '24h' }\" @click=\"setJanela('24h')\">24h</button>\n      </div>\n    </div>\n\n    <!-- MINI CARDS DE RESUMO -->\n    <div class=\"summary-grid\">\n      <div v-for=\"s in resumo\" :key=\"s.id\" class=\"summary-card\" :class=\"s.id\">\n        <div class=\"summary-header\">\n          <span class=\"summary-nome\" :class=\"'txt-'+s.id\">{{ s.nome }}</span>\n          <span class=\"summary-badge\">{{ s.badge }}</span>\n        </div>\n        <div class=\"summary-metrics\">\n          <div class=\"summary-metric\">\n            <div class=\"summary-label\">ATUAL</div>\n            <div class=\"summary-value\">{{ fmt(s.atual) }}°C</div>\n          </div>\n          <div class=\"summary-metric\">\n            <div class=\"summary-label\">MÍN</div>\n            <div class=\"summary-value small\">{{ fmt(s.min) }}</div>\n          </div>\n          <div class=\"summary-metric\">\n            <div class=\"summary-label\">MÁX</div>\n            <div class=\"summary-value small\">{{ fmt(s.max) }}</div>\n          </div>\n          <div class=\"summary-metric\">\n            <div class=\"summary-label\">MÉDIA</div>\n            <div class=\"summary-value small\">{{ fmt(s.media) }}</div>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- GRÁFICO TEMPERATURA -->\n    <div class=\"chart-card\">\n      <div class=\"chart-card-header\">\n        <span class=\"chart-card-title\">Temperatura (°C)</span>\n        <div class=\"chart-legend\">\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#1D9E75\"></span>DHT22</span>\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#378ADD\"></span>DHT11</span>\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#BA7517\"></span>Open-Meteo</span>\n        </div>\n      </div>\n      <canvas ref=\"canvasTemp\" class=\"chart-canvas\"></canvas>\n    </div>\n\n    <!-- GRÁFICO UMIDADE -->\n    <div class=\"chart-card\">\n      <div class=\"chart-card-header\">\n        <span class=\"chart-card-title\">Umidade (%)</span>\n        <div class=\"chart-legend\">\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#1D9E75\"></span>DHT22</span>\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#378ADD\"></span>DHT11</span>\n          <span class=\"legend-item\"><span class=\"legend-dot\" style=\"background:#BA7517\"></span>Open-Meteo</span>\n        </div>\n      </div>\n      <canvas ref=\"canvasUmi\" class=\"chart-canvas\"></canvas>\n    </div>\n\n  </div>\n</template>\n\n<script>\nexport default {\n  data() {\n    return {\n      janela: '24h',\n      rows: [],\n      chartTemp: null,\n      chartUmi:  null\n    }\n  },\n  computed: {\n    horas() {\n      return { '1h':1, '6h':6, '12h':12, '24h':24 }[this.janela] || 24\n    },\n    rowsFiltrados() {\n      if (!this.rows.length) return []\n      const corte = Date.now() - this.horas * 3600 * 1000\n      return this.rows.filter(r => new Date(r.criado_em).getTime() >= corte)\n    },\n    resumo() {\n      const fontes = [\n        { id:'dht22',     nome:'DHT22',      badge:'Interno · ESP32 #1' },\n        { id:'dht11',     nome:'DHT11',      badge:'Externo · ESP32 #2' },\n        { id:'openmeteo', nome:'Open-Meteo', badge:'Externo · API'      }\n      ]\n      return fontes.map(f => {\n        const r = this.rowsFiltrados.filter(x => x.fonte === f.id)\n        if (!r.length) return { ...f, atual:null, min:null, max:null, media:null }\n        const temps = r.map(x => parseFloat(x.temperatura))\n        const ultimo = r[r.length - 1]\n        return {\n          ...f,\n          atual: parseFloat(ultimo.temperatura),\n          min:   Math.min(...temps),\n          max:   Math.max(...temps),\n          media: temps.reduce((a,b)=>a+b,0)/temps.length\n        }\n      })\n    }\n  },\n  watch: {\n    msg(novo) {\n      if (!novo || !novo.payload) return\n      const p = novo.payload\n      if (Array.isArray(p)) {\n        this.rows = p\n        this.$nextTick(() => this.renderCharts())\n      }\n    },\n    janela() {\n      this.$nextTick(() => this.renderCharts())\n    }\n  },\n  mounted() {\n    this.send({ payload: { acao: 'buscar' } })\n  },\n  methods: {\n    fmt(v, dec=1) {\n      if (v === null || v === undefined || isNaN(v)) return '—'\n      return parseFloat(v).toFixed(dec)\n    },\n    setJanela(j) {\n      this.janela = j\n    },\n    getDatasets(campo) {\n      const config = [\n        { fonte:'dht22',     cor:'#1D9E75', label:'DHT22'      },\n        { fonte:'dht11',     cor:'#378ADD', label:'DHT11'      },\n        { fonte:'openmeteo', cor:'#BA7517', label:'Open-Meteo' }\n      ]\n      return config.map(c => {\n        const pontos = this.rowsFiltrados\n          .filter(r => r.fonte === c.fonte)\n          .map(r => ({\n            x: new Date(r.criado_em).getTime(),\n            y: parseFloat(r[campo])\n          }))\n        return {\n          label: c.label,\n          data:  pontos,\n          borderColor: c.cor,\n          backgroundColor: c.cor + '18',\n          borderWidth: 1.5,\n          pointRadius: 0,\n          pointHoverRadius: 4,\n          tension: 0.3,\n          fill: false\n        }\n      })\n    },\n    renderCharts() {\n    // Aguarda Chart.js carregar se ainda não estiver disponível\n      if (typeof Chart === 'undefined') {\n        setTimeout(() => this.renderCharts(), 300)\n        return\n      }\n      this.buildChart('canvasTemp', 'temperatura', '°C')\n      this.buildChart('canvasUmi', 'umidade', '%')\n    },\n    buildChart(refName, campo, unidade) {\n      const canvas = this.$refs[refName]\n      if (!canvas) return\n\n      // Destrói via registro do Chart.js\n      const existing = Chart.getChart(canvas)\n      if (existing) existing.destroy()\n\n      const ctx = canvas.getContext('2d')\n\n      // Destrói chart anterior se existir\n      if (refName === 'canvasTemp' && this.chartTemp) { this.chartTemp.destroy(); this.chartTemp = null }\n      if (refName === 'canvasUmi'  && this.chartUmi)  { this.chartUmi.destroy();  this.chartUmi  = null }\n\n      const chart = new Chart(ctx, {\n        type: 'line',\n        data: { datasets: this.getDatasets(campo) },\n        options: {\n          responsive: true,\n          maintainAspectRatio: false,\n          interaction: { mode: 'index', intersect: false },\n          plugins: {\n            legend: { display: false },\n            tooltip: {\n              backgroundColor: '#fff',\n              borderColor: '#e0e0e0',\n              borderWidth: 1,\n              titleColor: '#888',\n              bodyColor: '#111',\n              padding: 10,\n              callbacks: {\n                label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y?.toFixed(1)}${unidade}`\n              }\n            }\n          },\n          scales: {\n            x: {\n              type: 'time',\n              time: {\n                unit: this.horas <= 1 ? 'minute' : this.horas <= 6 ? 'minute' : 'hour',\n                displayFormats: { minute: 'HH:mm', hour: 'HH:mm' }\n              },\n              grid: { color: '#f0f0f0' },\n              ticks: { color: '#aaa', font: { size: 11 }, maxTicksLimit: 8 }\n            },\n            y: {\n              grid: { color: '#f0f0f0' },\n              ticks: {\n                color: '#aaa',\n                font: { size: 11 },\n                callback: v => v + unidade\n              }\n            }\n          }\n        }\n      })\n\n      if (refName === 'canvasTemp') this.chartTemp = chart\n      else                          this.chartUmi  = chart\n    }\n  }\n}\n</script>\n\n<style>\n.chart-page{font-family:sans-serif;padding:1.25rem;background:#f5f5f0;min-height:100vh;display:flex;flex-direction:column;gap:1rem}\n.chart-header{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.75rem}\n.chart-title{font-size:20px;font-weight:600;color:#111;margin:0}\n.chart-sub{font-size:13px;color:#888;margin:3px 0 0}\n.chart-controls{display:flex;gap:6px;align-items:center}\n.ctrl-btn{padding:6px 14px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#555;transition:all 0.15s}\n.ctrl-btn:hover{border-color:#1D9E75;color:#1D9E75}\n.ctrl-btn.active{background:#1D9E75;color:#fff;border-color:#1D9E75}\n.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}\n.summary-card{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:0.85rem 1rem}\n.summary-card.dht22    {border-top:2.5px solid #1D9E75}\n.summary-card.dht11    {border-top:2.5px solid #378ADD}\n.summary-card.openmeteo{border-top:2.5px solid #BA7517}\n.summary-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem}\n.summary-nome{font-size:12px;font-weight:700;letter-spacing:0.06em}\n.txt-dht22    {color:#0F6E56}\n.txt-dht11    {color:#185FA5}\n.txt-openmeteo{color:#854F0B}\n.summary-badge{font-size:10px;color:#aaa;border:0.5px solid #eee;border-radius:20px;padding:1px 8px}\n.summary-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}\n.summary-label{font-size:9px;letter-spacing:0.08em;color:#bbb;margin-bottom:2px}\n.summary-value{font-size:18px;font-weight:600;color:#111}\n.summary-value.small{font-size:14px;font-weight:500;color:#333}\n.chart-card{background:#fff;border-radius:12px;border:0.5px solid #e0e0e0;padding:1rem 1.25rem}\n.chart-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem}\n.chart-card-title{font-size:13px;font-weight:600;color:#374151;letter-spacing:0.03em}\n.chart-legend{display:flex;gap:12px}\n.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}\n.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}\n.chart-canvas{height:250px !important;width:100% !important}\n</style>",
+        "storeOutMessages": true,
+        "passthru": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 120,
+        "y": 480,
+        "wires": [
+            [
+                "fn_graficos_router"
+            ]
+        ]
+    },
+    {
+        "id": "fn_graficos_router",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Roteador Gráficos",
+        "func": "if (msg.payload?.acao === 'buscar') {\n    msg.topic   = 'SELECT fonte, temperatura, umidade, heat_index, nivel_alerta, criado_em '\n                + 'FROM leituras '\n                + 'WHERE criado_em >= NOW() - INTERVAL 24 HOUR '\n                + 'ORDER BY criado_em ASC';\n    msg.payload = [];\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "x": 350,
+        "y": 480,
+        "wires": [
+            [
+                "mysql_graficos"
+            ]
+        ]
+    },
+    {
+        "id": "mysql_graficos",
+        "type": "mysql",
+        "z": "b82cd2a8bd2c1565",
+        "mydb": "cd8238219038bf5e",
+        "name": "SELECT graficos",
+        "x": 570,
+        "y": 480,
+        "wires": [
+            [
+                "fn_graficos_serializar"
+            ]
+        ]
+    },
+    {
+        "id": "fn_graficos_serializar",
+        "type": "function",
+        "z": "b82cd2a8bd2c1565",
+        "name": "Serializar datas",
+        "func": "msg.payload = (msg.payload || []).map(r => ({\n    ...r,\n    criado_em: r.criado_em instanceof Date\n        ? r.criado_em.toISOString().replace('T',' ').substring(0,19)\n        : r.criado_em\n}));\nreturn msg;",
+        "outputs": 1,
+        "x": 790,
+        "y": 480,
+        "wires": [
+            [
+                "ui_tpl_graficos"
+            ]
+        ]
+    },
+    {
+        "id": "inject_graficos",
+        "type": "inject",
+        "z": "b82cd2a8bd2c1565",
+        "name": "A cada 5 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "8",
+        "topic": "",
+        "payload": "{\"acao\":\"buscar\"}",
+        "payloadType": "json",
+        "x": 120,
+        "y": 540,
+        "wires": [
+            [
+                "fn_graficos_router"
+            ]
+        ]
+    },
+    {
+        "id": "5b55d51cf6f254d3",
+        "type": "ui-template",
+        "z": "b82cd2a8bd2c1565",
+        "group": "",
+        "page": "",
+        "ui": "ui_base",
+        "name": "JS Gráficos",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "<template>\n  <div style=\"display:none;\"></div>\n</template>\n\n<script>\nexport default {\n  name: 'ChartLoader',\n  mounted() {\n    this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js')\n      .then(() => this.loadScript('https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js'))\n      .then(() => this.loadScript('https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1/dist/chartjs-adapter-luxon.umd.min.js'))\n      .then(() => console.log('Chart.js + Luxon adapter prontos'))\n      .catch(e => console.error('Erro:', e))\n  },\n  methods: {\n    loadScript(url) {\n      return new Promise((resolve, reject) => {\n        if (document.querySelector(`script[src=\"${url}\"]`)) { resolve(); return }\n        const s = document.createElement('script')\n        s.src = url\n        s.onload  = resolve\n        s.onerror = reject\n        document.head.appendChild(s)\n      })\n    }\n  }\n}\n</script>",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "widget:ui",
+        "className": "",
+        "x": 110,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "broker_mosquitto",
+        "type": "mqtt-broker",
+        "name": "Mosquitto Local",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "nodered_clima_v2",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "cd8238219038bf5e",
+        "type": "MySQLdatabase",
+        "name": "climamonitor",
+        "host": "127.0.0.1",
+        "port": "3306",
+        "db": "climamonitor",
+        "tz": "-03:00",
+        "charset": "UTF8"
+    },
+    {
+        "id": "ui_group_atual",
+        "type": "ui-group",
+        "name": "Leituras Atuais",
+        "page": "ui_page_atual",
+        "width": "4",
+        "height": "4",
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_group_historico",
+        "type": "ui-group",
+        "name": "Gráficos",
+        "page": "ui_page_historico",
+        "width": 12,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "false",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_group_dashboard",
+        "type": "ui-group",
+        "name": "Dashboard",
+        "page": "ui_page_dashboard",
+        "width": 12,
+        "height": 1,
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "b17b94715e054110",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "7e3b86210c2447adad0a3f82c88aed28.s1.eu.hivemq.cloud",
+        "port": "8883",
+        "tls": "",
+        "clientid": "nodered_hivemq",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "ui_group_leds",
+        "type": "ui-group",
+        "name": "LEDs",
+        "page": "ui_page_leds",
+        "width": 12,
+        "height": 1,
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "ui_group_ia",
+        "type": "ui-group",
+        "name": "IA",
+        "page": "ui_page_atual",
+        "width": 8,
+        "height": "10",
+        "order": 2,
+        "showTitle": false,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "ui_group_graficos",
+        "type": "ui-group",
+        "name": "Gráficos",
+        "page": "ui_page_graficos",
+        "width": 12,
+        "height": 1,
+        "order": 1,
+        "showTitle": false,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "ui_base",
+        "type": "ui-base",
+        "name": "ClimaMonitor",
+        "path": "/ui",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 5,
+        "showDisconnectNotification": true,
+        "allowInstall": true
+    },
+    {
+        "id": "ui_page_atual",
+        "type": "ui-page",
+        "name": "Atual",
+        "ui": "ui_base",
+        "path": "/atual",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "499362cb79ce6cbc",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "ui_page_historico",
+        "type": "ui-page",
+        "d": true,
+        "name": "Histórico",
+        "ui": "ui_base",
+        "path": "/historico",
+        "icon": "chart-line",
+        "layout": "grid",
+        "theme": "499362cb79ce6cbc",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 2,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "ui_page_dashboard",
+        "type": "ui-page",
+        "name": "Dashboard",
+        "ui": "ui_base",
+        "path": "/dashboard",
+        "icon": "view-dashboard",
+        "layout": "grid",
+        "theme": "499362cb79ce6cbc",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 3,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "ui_page_leds",
+        "type": "ui-page",
+        "name": "LEDs",
+        "ui": "ui_base",
+        "path": "/leds",
+        "icon": "lightbulb",
+        "layout": "grid",
+        "theme": "499362cb79ce6cbc",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 4,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "ui_page_graficos",
+        "type": "ui-page",
+        "name": "Gráficos",
+        "ui": "ui_base",
+        "path": "/graficos",
+        "icon": "chart-line",
+        "layout": "grid",
+        "theme": "499362cb79ce6cbc",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 5,
+        "className": "",
+        "visible": true,
+        "disabled": false
+    },
+    {
+        "id": "499362cb79ce6cbc",
+        "type": "ui-theme",
+        "name": "Clean Light",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#1D9E75",
+            "bgPage": "#f5f5f0",
+            "groupBg": "#ffffff",
+            "groupOutline": "#e8e8e8"
+        },
+        "sizes": {
+            "pagePadding": "16px",
+            "groupGap": "12px",
+            "groupBorderRadius": "12px",
+            "widgetGap": "8px"
+        }
+    },
+    {
+        "id": "19e04c0f0a14346e",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-node-mysql": "3.0.0",
+            "@flowfuse/node-red-dashboard": "1.30.2"
+        }
+    }
+]
